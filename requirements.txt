@@ -1,0 +1,15 @@
+# PDF Parsing (Docling for layout)
+docling>=2.70.0
+
+# Database & Vector Search
+sqlalchemy==2.0.23
+psycopg[binary]==3.1.18
+pgvector==0.2.5
+
+# LLMs (Gemini)
+google-generativeai==0.8.0
+
+# Utilities
+python-dotenv==1.0.0
+pydantic>=2.6.0,<3.0.0
+Pillow>=10.0.0
