@@ -1,0 +1,16 @@
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Secrets and Versions
+.env
+.python-version
+
+# Mac system files
+.DS_Store
+
+# Python artifacts
+__pycache__/
+*.py[c]
