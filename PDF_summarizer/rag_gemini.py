@@ -73,8 +73,7 @@ class GeminiRAGPipeline:
                     "\n\n" +
                     (chunk.verbalized_summary or "")
                 ).strip()
-                text = chunk.verbalized_summary or ""
-                if not text.strip():
+                if not text:
                     continue
                 emb = embed_text(text)
                 if emb:
