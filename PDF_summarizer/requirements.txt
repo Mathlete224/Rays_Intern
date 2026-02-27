@@ -3,7 +3,7 @@ docling>=2.70.0
 
 # Database & Vector Search
 sqlalchemy==2.0.23
-psycopg[binary]==3.1.18
+psycopg[binary]>=3.2,<=4
 pgvector==0.2.5
 
 # LLMs (Gemini)

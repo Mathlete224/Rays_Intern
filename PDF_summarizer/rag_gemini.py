@@ -67,8 +67,12 @@ class GeminiRAGPipeline:
             chunks = self.db.get_chunks_without_embedding(limit=batch_size)
             if not chunks:
                 break
-
             for chunk in chunks:
+                text = (
+                    (chunk.raw_content or "") +
+                    "\n\n" +
+                    (chunk.verbalized_summary or "")
+                ).strip()
                 text = chunk.verbalized_summary or ""
                 if not text.strip():
                     continue

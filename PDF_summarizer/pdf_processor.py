@@ -40,7 +40,7 @@ def _verbalize_page_image(pil_image, model_name: str = VERBALIZE_MODEL) -> str:
     model = genai.GenerativeModel(model_name)
 
     prompt = (
-       "You are a financial analyst. Summarize this entire PDF. "
+       "You are a financial analyst. Summarize this single page of a larger financial report. "
         "For every chart and table, extract the key data points, trends, and legends "
         "into a Markdown table format. Ensure that the visual insights "
         "(e.g., 'Revenue spiked in Q3') are explicitly written as text. "

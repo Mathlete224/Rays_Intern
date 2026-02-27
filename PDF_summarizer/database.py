@@ -98,7 +98,12 @@ class DatabaseManager:
 
         if database_url.startswith("postgresql"):
             with self.engine.connect() as conn:
-                conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                conn.execute(text("""
+                    CREATE INDEX IF NOT EXISTS pdf_chunks_embedding_idx
+                    ON pdf_chunks
+                    USING ivfflat (embedding vector_cosine_ops)
+                    WITH (lists = 100);
+                """))
 
         self.SessionLocal = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
