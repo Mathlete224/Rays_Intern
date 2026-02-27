@@ -1,16 +1,46 @@
-# Environments
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
 .venv/
 venv/
 env/
 ENV/
+research_pdfs/
 
-# Secrets and Versions
+# Build & distribution
+build/
+dist/
+downloads/
+*.egg-info/
+.eggs/
+wheels/
+*.egg
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
 .env
 .python-version
 
-# Mac system files
-.DS_Store
-
-# Python artifacts
-__pycache__/
-*.py[c]
+# Project-specific
+pdfs/
+*.pdf
+!example_financial_report.pdf

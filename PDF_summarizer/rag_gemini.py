@@ -14,7 +14,7 @@ from database import DatabaseManager, PDFChunk
 
 # Use model that outputs 3072 dims (schema expects Vector(3072))
 # models/embedding-001 or models/text-embedding-005; gemini-embedding-001 defaults to 3072
-EMBEDDING_MODEL = "models/embedding-001"
+EMBEDDING_MODEL = "models/text-embedding-003-small"
 GENERATION_MODEL = "gemini-1.5-pro"
 
 load_dotenv()

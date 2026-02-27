@@ -1,7 +1,7 @@
-from pipeline import get_file_hash
+from utils import get_file_hash
 from pathlib import Path
 
-file_path = Path("research_pdfs/1_91APP (6741) - HK Roadshow - Nov 7-8th, 2024_91App HK Road Nov 7-8.pdf")  # pick any small PDF
+file_path = Path("/Users/davidfu/Desktop/Rays_Intern/PDF_summarizer/research_pdfs/1_91APP (6741) - HK Roadshow - Nov 7-8th, 2024_91App HK Road Nov 7-8.pdf")  # pick any small PDF
 
 print("hi")
 hash1 = get_file_hash(file_path)

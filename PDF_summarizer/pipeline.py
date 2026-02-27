@@ -11,17 +11,7 @@ from database import DatabaseManager
 from pdf_processor import DoclingProcessor
 import hashlib
 from pathlib import Path
-
-def get_file_hash(file_path: str, chunk_size: int = 8192) -> str:
-    """
-    Returns a SHA256 hash of the file content.
-    """
-    h = hashlib.sha256()
-    file_path = Path(file_path)
-    with file_path.open("rb") as f:
-        while chunk := f.read(chunk_size):
-            h.update(chunk)
-    return h.hexdigest()
+from utils import get_file_hash
 
 class PDFSummarizerPipeline:
     """Parse PDFs with Docling, verbalize charts with Gemini, store in Postgres."""
@@ -40,8 +30,8 @@ class PDFSummarizerPipeline:
         """
         pdf_path = Path(pdf_path)
         filename = pdf_path.name
+        file_hash = get_file_hash(pdf_path)
         if skip_existing:
-            file_hash = get_file_hash(pdf_path)
             existing = self.db_manager.get_document_by_hash(file_hash)
             if existing:
                 print(f" Already processed: {filename}")

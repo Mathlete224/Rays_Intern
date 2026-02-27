@@ -21,8 +21,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
-
 from pgvector.sqlalchemy import Vector
+from utils import get_file_hash
 
 Base = declarative_base()
 
@@ -37,6 +37,7 @@ class PDFDocument(Base):
     file_path = Column(String(1000), nullable=False)
     total_pages = Column(Integer, nullable=False)
     file_size_bytes = Column(Integer, nullable=False)
+    file_hash = Column(String(64), nullable=False, unique=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     processed_at = Column(DateTime, nullable=True)
 
@@ -64,7 +65,7 @@ class PDFChunk(Base):
     document_id = Column(Integer, ForeignKey("pdf_documents.id"), nullable=False)
 
     # Verbalization vector — embed verbalized_summary, search against this
-    embedding = Column(Vector(3072), nullable=True)
+    embedding = Column(Vector(1024), nullable=True)
 
     # Original Docling markdown (text + reconstructed tables) — use for answering
     raw_content = Column(Text, nullable=False)
@@ -119,6 +120,7 @@ class DatabaseManager:
         file_path: str,
         total_pages: int,
         file_size_bytes: int,
+        file_hash: str,
     ) -> PDFDocument:
         session = self.get_session()
         try:
@@ -127,6 +129,7 @@ class DatabaseManager:
                 file_path=file_path,
                 total_pages=total_pages,
                 file_size_bytes=file_size_bytes,
+                file_hash=get_file_hash(file_path),
             )
             session.add(doc)
             session.commit()
@@ -137,7 +140,13 @@ class DatabaseManager:
             raise
         finally:
             session.close()
-
+    
+    def get_document_by_hash(self, file_hash: str) -> Optional[PDFDocument]:
+        session = self.get_session()
+        try:
+            return session.query(PDFDocument).filter_by(file_hash=file_hash).first()
+        finally:
+            session.close()
     def add_chunks(self, document_id: int, chunks: List[dict]) -> List[PDFChunk]:
         """
         Add chunks for a document.
