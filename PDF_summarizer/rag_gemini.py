@@ -1,11 +1,13 @@
 """
 RAG pipeline: search on verbalized_summary, answer from raw_content.
 
-Golden rule: Store verbalization for searching, keep raw content for answering.
+Flow: Return top 3 most relevant chunks; for each, include metadata + summary of the chunk,
+its parent, and its siblings, then repeat for the other two (~9 chunks in context).
 """
 import os
+import uuid as uuid_lib
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -87,40 +89,115 @@ class GeminiRAGPipeline:
     def retrieve_relevant_chunks(
         self,
         query: str,
-        top_k: int = 10,
+        top_k: int = 3,
         filters: Optional[RetrievalFilters] = None,
     ) -> List[PDFChunk]:
-        """Vector search over verbalized_summary embeddings."""
+        """
+        Vector search over verbalized_summary embeddings.
+
+        Returns the top_k most relevant chunks (default 3). Optional diversity re-ranking.
+        """
         if filters is None:
             filters = RetrievalFilters()
 
         query_emb = embed_text(query)
-        return self.db.semantic_search_chunks(
+        initial_limit = max(top_k * 3, top_k + 3)
+        raw_chunks = self.db.semantic_search_chunks(
             query_embedding=query_emb,
-            limit=top_k,
+            limit=initial_limit,
             document_ids=filters.document_ids,
             filenames=filters.filenames,
             page_min=filters.page_min,
             page_max=filters.page_max,
         )
 
-    def _build_context(self, chunks: Iterable[PDFChunk]) -> str:
-        """Use raw_content for answering (original data), not verbalized summary."""
-        parts = []
-        for c in chunks:
-            meta = c.metadata_ or {}
-            pg = meta.get("page_number", c.page_number) or "?"
-            header = f"[doc_id={c.document_id}, page={pg}]"
-            parts.append(f"{header}\n{c.raw_content}\n")
+        if not raw_chunks:
+            return []
+
+        return self._diversify_chunks(raw_chunks, top_k=top_k)
+
+    def _get_chunk_family(
+        self, chunk: PDFChunk
+    ) -> Tuple[Optional[PDFChunk], Optional[PDFChunk], Optional[PDFChunk]]:
+        """Return (parent, prev_sibling, next_sibling) for a chunk using metadata IDs."""
+        meta = chunk.metadata_ or {}
+        parent, prev_sib, next_sib = None, None, None
+        try:
+            pid = meta.get("parent_chunk_id")
+            if pid:
+                parent = self.db.get_chunk_by_id(uuid_lib.UUID(pid))
+        except (ValueError, TypeError):
+            pass
+        try:
+            pid = meta.get("prev_sibling_chunk_id")
+            if pid:
+                prev_sib = self.db.get_chunk_by_id(uuid_lib.UUID(pid))
+        except (ValueError, TypeError):
+            pass
+        try:
+            pid = meta.get("next_sibling_chunk_id")
+            if pid:
+                next_sib = self.db.get_chunk_by_id(uuid_lib.UUID(pid))
+        except (ValueError, TypeError):
+            pass
+        return parent, prev_sib, next_sib
+
+    def _build_context(self, top_chunks: List[PDFChunk]) -> str:
+        """
+        Build context from top 3 chunks: for each chunk include its metadata + summary,
+        then the same for its parent and sibling chunks (~9 chunks total).
+        """
+        parts: List[str] = []
+        for n, chunk in enumerate(top_chunks, 1):
+            parent, prev_sib, next_sib = self._get_chunk_family(chunk)
+            block = self._format_chunk_block(
+                chunk, parent, prev_sib, next_sib, label=f"Retrieved chunk {n}"
+            )
+            parts.append(block)
         return "\n\n".join(parts)
+
+    def _format_chunk_block(
+        self,
+        chunk: PDFChunk,
+        parent: Optional[PDFChunk],
+        prev_sibling: Optional[PDFChunk],
+        next_sibling: Optional[PDFChunk],
+        label: str = "Chunk",
+    ) -> str:
+        """Format one retrieved chunk plus its parent and siblings (metadata + summary + content)."""
+        lines: List[str] = [f"=== {label} ==="]
+
+        def append_chunk(c: PDFChunk, role: str) -> None:
+            meta = c.metadata_ or {}
+            summary = (c.verbalized_summary or "").strip()
+            content = (c.raw_content or "").strip()
+            lines.append(f"  {role} metadata: {meta}")
+            lines.append(f"  {role} summary: {summary[:1500]}{'...' if len(summary) > 1500 else ''}")
+            lines.append(f"  {role} content: {content[:4000]}{'...' if len(content) > 4000 else ''}")
+
+        append_chunk(chunk, "Chunk")
+        if parent:
+            append_chunk(parent, "Parent")
+        else:
+            lines.append("  Parent: (none)")
+        if prev_sibling:
+            append_chunk(prev_sibling, "Previous sibling")
+        else:
+            lines.append("  Previous sibling: (none)")
+        if next_sibling:
+            append_chunk(next_sibling, "Next sibling")
+        else:
+            lines.append("  Next sibling: (none)")
+
+        return "\n".join(lines)
 
     def answer_question(
         self,
         question: str,
-        top_k: int = 10,
+        top_k: int = 3,
         filters: Optional[RetrievalFilters] = None,
     ) -> dict:
-        """Search on verbalized_summary, answer from raw_content."""
+        """Return top_k chunks (default 3), expand each with parent + siblings, feed ~9 chunks to context."""
         chunks = self.retrieve_relevant_chunks(question, top_k=top_k, filters=filters)
         context = self._build_context(chunks)
 
@@ -140,10 +217,88 @@ class GeminiRAGPipeline:
         return {
             "answer": answer,
             "chunks_used": [
-                {"chunk_id": str(c.id), "document_id": c.document_id, "page_number": c.page_number}
+                {
+                    "chunk_id": str(c.id),
+                    "document_id": c.document_id,
+                    "page_number": c.page_number,
+                    "metadata": c.metadata_ or {},
+                }
                 for c in chunks
             ],
         }
+
+    def _diversify_chunks(self, chunks: List[PDFChunk], top_k: int) -> List[PDFChunk]:
+        """
+        Promote diversity across sections and hierarchy levels.
+
+        Strategy:
+            - Prefer document-level and section-level chunks.
+            - Spread page-level chunks across different sections.
+        """
+        # Keep original ranking index as tie-breaker
+        ranked = list(enumerate(chunks))
+
+        doc_level: List[Tuple[int, PDFChunk]] = []
+        section_level: Dict[str, List[Tuple[int, PDFChunk]]] = {}
+        page_level: Dict[Tuple[int, Optional[str]], List[Tuple[int, PDFChunk]]] = {}
+
+        for idx, c in ranked:
+            meta = c.metadata_ or {}
+            level = meta.get("level")
+            section_id = meta.get("section_id")
+
+            if level == "document":
+                doc_level.append((idx, c))
+            elif level == "section":
+                section_level.setdefault(section_id or f"sec-{idx}", []).append((idx, c))
+            else:
+                key = (c.document_id, section_id)
+                page_level.setdefault(key, []).append((idx, c))
+
+        selected: List[PDFChunk] = []
+
+        # 1) At most one document-level chunk per document.
+        for _, c in sorted(doc_level, key=lambda t: t[0]):
+            if len(selected) >= top_k:
+                break
+            if c not in selected:
+                selected.append(c)
+
+        if len(selected) >= top_k:
+            return selected[:top_k]
+
+        # 2) One section-level chunk per section in order.
+        for sec_id, items in sorted(section_level.items(), key=lambda kv: kv[0] or ""):
+            if len(selected) >= top_k:
+                break
+            items_sorted = sorted(items, key=lambda t: t[0])
+            _, c = items_sorted[0]
+            if c not in selected:
+                selected.append(c)
+
+        if len(selected) >= top_k:
+            return selected[:top_k]
+
+        # 3) Round-robin across sections for page-level chunks.
+        # Convert dict values to queues.
+        queues: List[List[Tuple[int, PDFChunk]]] = [
+            sorted(v, key=lambda t: t[0]) for _, v in sorted(page_level.items(), key=lambda kv: kv[0])
+        ]
+
+        exhausted = False
+        while len(selected) < top_k and not exhausted:
+            exhausted = True
+            for q in queues:
+                if not q:
+                    continue
+                exhausted = False
+                _, c = q.pop(0)
+                if c not in selected:
+                    selected.append(c)
+                    if len(selected) >= top_k:
+                        break
+
+        return selected[:top_k]
 
 
 def main():
@@ -163,7 +318,7 @@ def main():
 
     ask = sub.add_parser("ask", help="Ask a question")
     ask.add_argument("question", help="Question")
-    ask.add_argument("--top-k", type=int, default=10)
+    ask.add_argument("--top-k", type=int, default=3)
     ask.add_argument("--filename", action="append", help="Filter by filename")
     ask.add_argument("--doc-id", type=int, action="append", help="Filter by doc id")
     ask.add_argument("--page-min", type=int, default=None)

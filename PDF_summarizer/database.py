@@ -129,7 +129,8 @@ class DatabaseManager:
                 file_path=file_path,
                 total_pages=total_pages,
                 file_size_bytes=file_size_bytes,
-                file_hash=get_file_hash(file_path),
+                # Use the provided file_hash so duplicate detection is stable
+                file_hash=file_hash,
             )
             session.add(doc)
             session.commit()
@@ -202,6 +203,22 @@ class DatabaseManager:
         session = self.get_session()
         try:
             return session.query(PDFChunk).filter_by(id=chunk_id).first()
+        finally:
+            session.close()
+
+    def update_chunk_metadata(self, chunk_id: uuid.UUID, metadata: Dict[str, Any]) -> None:
+        """Update the metadata JSONB for a chunk (merge with existing)."""
+        session = self.get_session()
+        try:
+            chunk = session.query(PDFChunk).filter_by(id=chunk_id).first()
+            if chunk:
+                existing = dict(chunk.metadata_ or {})
+                existing.update(metadata)
+                chunk.metadata_ = existing
+                session.commit()
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 
