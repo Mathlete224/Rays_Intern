@@ -22,7 +22,6 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 from pgvector.sqlalchemy import Vector
-from utils import get_file_hash
 
 Base = declarative_base()
 
@@ -148,9 +147,9 @@ class DatabaseManager:
             return session.query(PDFDocument).filter_by(file_hash=file_hash).first()
         finally:
             session.close()
-    def add_chunks(self, document_id: int, chunks: List[dict]) -> List[PDFChunk]:
+    def add_chunks(self, document_id: int, chunks: List[dict]) -> List[uuid.UUID]:
         """
-        Add chunks for a document.
+        Add chunks for a document. Returns list of chunk IDs (in same order as chunks).
         Each chunk dict: raw_content, verbalized_summary, metadata, image_blob (optional)
         """
         session = self.get_session()
@@ -173,7 +172,8 @@ class DatabaseManager:
                 doc.processed_at = datetime.utcnow()
 
             session.commit()
-            return chunk_objects
+            # Return IDs while session is still open so callers don't touch detached objects
+            return [obj.id for obj in chunk_objects]
         except Exception:
             session.rollback()
             raise
@@ -184,6 +184,40 @@ class DatabaseManager:
         session = self.get_session()
         try:
             return session.query(PDFDocument).filter_by(filename=filename).first()
+        finally:
+            session.close()
+
+    def delete_document(self, document_id: int) -> bool:
+        """
+        Delete a document and all its chunks (cascade). Returns True if deleted, False if not found.
+        """
+        session = self.get_session()
+        try:
+            doc = session.query(PDFDocument).filter_by(id=document_id).first()
+            if not doc:
+                return False
+            session.delete(doc)
+            session.commit()
+            return True
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def delete_all_documents(self) -> int:
+        """Delete all documents and their chunks (cascade). Returns number of documents deleted."""
+        session = self.get_session()
+        try:
+            docs = session.query(PDFDocument).all()
+            n = len(docs)
+            for doc in docs:
+                session.delete(doc)
+            session.commit()
+            return n
+        except Exception:
+            session.rollback()
+            raise
         finally:
             session.close()
 

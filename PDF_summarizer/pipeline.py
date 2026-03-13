@@ -9,8 +9,9 @@ import os
 import sys
 from pathlib import Path
 from typing import List, Optional
+import uuid as uuid_lib
 
-from database import DatabaseManager, PDFChunk
+from database import DatabaseManager
 from pdf_processor import DoclingProcessor
 from utils import get_file_hash
 
@@ -56,8 +57,8 @@ class PDFSummarizerPipeline:
                 file_hash=file_hash,
             )
 
-            chunk_objects = self.db_manager.add_chunks(doc.id, chunks)
-            self._set_parent_sibling_metadata(chunk_objects, chunks)
+            chunk_ids = self.db_manager.add_chunks(doc.id, chunks)
+            self._set_parent_sibling_metadata(chunk_ids, chunks)
 
             print(f"✅ Done: {filename}")
             print(f"   Pages: {total_pages}")
@@ -114,18 +115,19 @@ class PDFSummarizerPipeline:
         return results
 
     def _set_parent_sibling_metadata(
-        self, chunk_objects: List[PDFChunk], chunks: List[dict]
+        self, chunk_ids: List[uuid_lib.UUID], chunks: List[dict]
     ) -> None:
         """
         Set parent_chunk_id, prev_sibling_chunk_id, next_sibling_chunk_id in each chunk's
-        metadata for easy DB lookup in RAG. chunk_objects and chunks are in the same order.
+        metadata for easy DB lookup in RAG. chunk_ids and chunks are in the same order.
+        Uses only chunk dicts (no detached ORM objects) to avoid Session errors.
         """
         doc_idx: int | None = None
         section_id_to_idx: dict = {}
-        page_to_idx: dict = {}  # page_number -> index in chunk_objects
+        page_to_idx: dict = {}  # page_number -> index
 
-        for i, c in enumerate(chunk_objects):
-            meta = c.metadata_ or {}
+        for i, c_dict in enumerate(chunks):
+            meta = c_dict.get("metadata") or {}
             level = meta.get("level")
             if level == "document":
                 doc_idx = i
@@ -138,39 +140,34 @@ class PDFSummarizerPipeline:
                 if pn is not None:
                     page_to_idx[pn] = i
 
-        for i, c in enumerate(chunk_objects):
-            meta = dict(c.metadata_ or {})
+        for i, c_dict in enumerate(chunks):
+            meta = dict(c_dict.get("metadata") or {})
             level = meta.get("level")
             parent_id: str | None = None
             prev_sib_id: str | None = None
             next_sib_id: str | None = None
 
             if level == "section" and doc_idx is not None:
-                parent_id = str(chunk_objects[doc_idx].id)
-                # Previous section (same document, section chunks are consecutive)
-                if i > doc_idx + 1:
-                    prev_c = chunk_objects[i - 1]
-                    if (prev_c.metadata_ or {}).get("level") == "section":
-                        prev_sib_id = str(prev_c.id)
-                if i < len(chunk_objects) - 1:
-                    next_c = chunk_objects[i + 1]
-                    if (next_c.metadata_ or {}).get("level") == "section":
-                        next_sib_id = str(next_c.id)
+                parent_id = str(chunk_ids[doc_idx])
+                if i > doc_idx + 1 and (chunks[i - 1].get("metadata") or {}).get("level") == "section":
+                    prev_sib_id = str(chunk_ids[i - 1])
+                if i < len(chunks) - 1 and (chunks[i + 1].get("metadata") or {}).get("level") == "section":
+                    next_sib_id = str(chunk_ids[i + 1])
             elif level == "page":
                 sid = meta.get("section_id")
                 if sid and sid in section_id_to_idx:
-                    parent_id = str(chunk_objects[section_id_to_idx[sid]].id)
+                    parent_id = str(chunk_ids[section_id_to_idx[sid]])
                 prev_page = meta.get("prev_page_in_section")
                 next_page = meta.get("next_page_in_section")
                 if prev_page is not None and prev_page in page_to_idx:
-                    prev_sib_id = str(chunk_objects[page_to_idx[prev_page]].id)
+                    prev_sib_id = str(chunk_ids[page_to_idx[prev_page]])
                 if next_page is not None and next_page in page_to_idx:
-                    next_sib_id = str(chunk_objects[page_to_idx[next_page]].id)
+                    next_sib_id = str(chunk_ids[page_to_idx[next_page]])
 
             meta["parent_chunk_id"] = parent_id
             meta["prev_sibling_chunk_id"] = prev_sib_id
             meta["next_sibling_chunk_id"] = next_sib_id
-            self.db_manager.update_chunk_metadata(c.id, meta)
+            self.db_manager.update_chunk_metadata(chunk_ids[i], meta)
 
     def get_document_info(self, document_id: int) -> Optional[dict]:
         """Get info about a processed document."""

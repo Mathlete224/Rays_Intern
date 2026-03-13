@@ -1,0 +1,1933 @@
+Cleared database: removed 1 document(s).
+
+Database: postgresql+psycopg://davidfu@localhost:5432/finance_rag
+PDF file: /Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf
+Output file: /Users/davidfu/Desktop/Rays_Intern/PDF_summarizer/test_ingest.txt
+
+📄 Processing: long_example.pdf
+✅ Done: long_example.pdf
+   Pages: 24
+   Document ID: 10
+
+--- Pipeline Result ---
+{'status': 'success', 'filename': 'long_example.pdf', 'document_id': 10, 'total_pages': 24, 'file_size_bytes': 1105402}
+
+============================================================
+DOCUMENT-LEVEL CHUNK (overall summary)
+============================================================
+  Document chunk_id=8d7f907a-388f-4395-9da0-f2ac0affc847
+    metadata: {'level': 'document', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'page_span': [1, 24], 'section_id': None, 'page_number': None, 'section_title': None, 'parent_chunk_id': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Okay, here's a summary of the SinoPac Securities report on Century Group and the Wind Energy Industry in Taiwan, reflecting the key information and avoiding speculation:
+
+**Century Group - Industry Update - January 20, 2025**
+
+*   The report focuses on Century Group's involvement in Taiwan's wind power development, highlighting key projects.
+*   Century Group is participating in the Hai Long, Fengmiao, Formosa 4, and Wei Lan Hai Changhua offshore wind projects.
+*   The report provides EPS estimates for Century Iron and Steel Industrial Co. (CIAS), Century Wind Power Co. (CWP), and Century Huaxin Wind Energy Co. (CHWE) for 2024 and 2025.
+*   The report recommends a "Buy" rating for CIAS, CWP, and CHWE with target prices of NT$254, NT$400, and NT$160, respectively, based on 2025 EPS estimates.
+*   CHWE is targeting wind turbine tower certification by the end of 2025, adopting EU industrial standards.
+*   Taiwan aims for 15.5% of its energy from renewables by 2025 and 20% by November 2026, with wind power being the fastest-growing renewable energy source in 2023.
+*   The report outlines Taiwan's three rounds of wind energy development: Demonstration Incentive Program (DIP), Zones Application for Planning (ZAP), and Zonal Development (Round 3).
+    content: <!-- image -->
+
+January 20, 2025 Industry
+
+Wind Energy
+
+## Industry Update
+
+## Century Group
+
+## Flying high on Taiwan's wind energy boom
+
+SinoPac View: Century Group is a major participant in Taiwan's wind power development. Final assembly for the Hai Long offshore wind project began in NOV 2024; raw material production for the Phase 1 Fengmiao project kicked off in JAN 2025; and initial production for the Formosa 4 and Wei Lan Hai Changhua projects are slated for 2H25. The Group's capacity expansions in 2025 will help it seize new wind power opportunities in Taiwan and beyond to fuel its sales and earnings growth.
+
+Our 2024/2025 EPS estimates: NT$7.82/12.74 for parent Century Iron and Steel Industrial Co. (9958 TT, CIAS); NT$10.70/18.20 for Century Wind Power Co. (2072 TT, CWP); NT$0.27/8.02 for Century Huaxin Wind Energy Co. (7752 TT, CHWE).
+
+Investment Opportunity: Century Group's members have traded between 15-25x of their respective 1-year forward EPS. Considering the buoyant demand driven by the country's fervent wind farm building, we expect persistent earnings growth for the Group. We think P/Es in the upper end of the range are attainable.
+
+-  Buy CIAS (9958 TT), TP of NT$254 (20x 2025F EPS)
+-  Buy CWP (2072 TT), TP of NT$400 (22x 2025F EPS)
+-  Buy CHWE (7752 TT), TP of NT$160 (20x 2025F EPS)
+
+Operations overview and analysis:
+
+## CHWE targets wind turbine tower certification this year
+
+CHWE has engaged in the development of wind turbine tower related technologies since its establishment. In 2021, it inked a technical cooperation agreement with major Danish wind power manufacturer Welcon to adopt EU industrial standards. CHWE currently produces towers with minimum/maximum diameters of 8m/12m, outperforming its domestic peers, which offer ~7.5m products. In JUL 2024, CHWE began the wind turbine generator (WTG) certification process for wind turbine developers. With trial production slated for APR 2025, CHWE aims to pass the certification by end-2025.
+
+## Ample catalysts and capacity for rekindled growth in 2025
+
+Century Group's 2024 sales were mainly generated from the Taipower and Hai Long projects respectively. Key sales contributors in 2025 will comprise Hai Long project's final assembly (completion slated for 2Q25), Phase 1 Fengmiao (final assembly slated for 3Q25), Formosa 4, and Wei Lan Hai Changhua projects.
+
+Eyeing the sharply higher tonnage of jacket foundations for Phase 1 wind farms, e.g., the jacket tonnage for Fengmiao averages 2,200 metric tons (MTs) and can reach 2500-2600 MTs, we anticipate conspicuous sales/earnings growth for 2025. As for the pin pile business, with the completion of CHWE's plant, we expect an annual out of 150-200 pin pile sets, which shall bring NT$4-6bn of sales.
+
+Please see penultimate page for additional important disclosures.
+
+SinoPac Securities (SinoPac) is a foreign broker-dealer unregistered in the USA. SinoPac research is prepared by SinoPac Securities Investment Service, whose analysts are not registered in the USA. SinoPac research is distributed in the USA pursuant to Rule 15a-6 of the Securities Exchange Act of 1934 solely by Auerbach Grayson &amp; Company, an SEC registered and FINRA-member broker-dealer.
+
+<!-- image -->
+
+<!-- image -->
+
+Regarding the installed capacity of Round 3 wind farms, with 2.64GW/ 2.70GW allocated for Phase 1/2, we foresee potential orders for 300+ jackets and for 1,000 pin piles over the next 4-5 years. Century Group is fully prepared to take Round 3 related orders. Though localized production would not be mandated from Phase 3 (2030) onwards, demand for offshore wind energy from Korea, Japan and other AsiaPacific countries will come online concurrently. Since Century Group is already competitive and has a comprehensive supply chain, it can compete with international peers. We are upbeat about the Century Group's long-term operational trend.
+
+## Robust long-term uptrend driven by higher wind turbine wattage
+
+To support a 14.5MW wind turbine...
+  parent: (none)
+  prev_sibling: (none)
+  next_sibling: (none)
+
+============================================================
+PAGE CHUNK 1 (page_number=1)
+============================================================
+  Page chunk_id=f66422a1-003f-4cce-a1e8-c9f9407a323d
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 1, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page, focusing on key data points and insights:
+
+**Industry Overview**
+
+The report provides an industry update on the Wind Energy sector, specifically focusing on the Century Group.
+
+**Century Group Analysis**
+
+*   **Key Takeaway**: Century Group is positioned to benefit from Taiwan's wind power development boom. Capacity expansions in 2025 are expected to drive sales and earnings growth.
+
+*   **Project Milestones:**
+    *   Hai Long offshore wind project final assembly began in November 2024.
+    *   Phase 1 Fengmiao raw material production started in January 2025.
+    *   Formosa 4 and Wei Lan Hai Changhua projects initial production is slated for 2H25.
+
+*   **EPS Estimates:**
+
+    | Company                                                            | Ticker        | 2024 EPS (NT$) | 2025 EPS (NT$) |
+    | :----------------------------------------------------------------- | :------------ | :------------- | :------------- |
+    | Century Iron and Steel Industrial Co.                             | 9958 TT, CIAS | 7.82           | 12.74          |
+    | Century Wind Power Co.                                             | 2072 TT, CWP  | 10.70          | 18.20          |
+    | Century Huaxin Wind Energy Co.                                     | 7752 TT, CHWE | 0.27           | 8.02           |
+
+*   **Investment Opportunity:**
+    *   Century Group's members have traded between 15-25x of their respective 1-year forward EPS.
+    *   Analyst expects persistent earnings growth.
+
+*   **Buy Recommendations:**
+
+    | Company             | Ticker   | Target Price (NT\$) | Notes                     |
+    | :------------------ | :------- | :------------------ | :------------------------ |
+    | Century Iron & Steel| 9958 TT  | 254                | 20x 2025F EPS             |
+    | Century Wind Power  | 2072 TT  | 400                | 22x 2025F EPS             |
+    | Century Huaxin Wind Energy | 7752 TT  | 160                | 20x 2025F EPS             |
+
+*   **Operations Overview**
+    *   CHWE is targeting wind turbine tower certification this year.
+    *   CHWE began wind turbine generator (WTG) certification process for wind turbine developers in JUL 2024.
+
+*   **Catalysts for Growth in 2025**
+    *   Key sales contributors in 2025 will comprise Hai Long project's final assembly (completion slated for 2Q25), Phase 1 Fengmiao (final assembly slated for 3Q25), Formosa 4, and Wei Lan Hai Changhua projects.
+    *   Expects conspicuous sales/earnings growth for 2025 due to higher jacket foundation tonnage (e.g., Fengmiao averaging 2,200 metric tons (MTs) and can reach 2500-2600 MTs).
+    *   Expects NT$4-6bn of sales from pin pile business upon CHWE's plant completion, producing 150-200 pin pile sets annually.
+    content: Here's a summary of the provided financial report page, focusing on key data points and insights:
+
+**Industry Overview**
+
+The report provides an industry update on the Wind Energy sector, specifically focusing on the Century Group.
+
+**Century Group Analysis**
+
+*   **Key Takeaway**: Century Group is positioned to benefit from Taiwan's wind power development boom. Capacity expansions in 2025 are expected to drive sales and earnings growth.
+
+*   **Project Milestones:**
+    *   Hai Long offshore wind project final assembly began in November 2024.
+    *   Phase 1 Fengmiao raw material production started in January 2025.
+    *   Formosa 4 and Wei Lan Hai Changhua projects initial production is slated for 2H25.
+
+*   **EPS Estimates:**
+
+    | Company                                                            | Ticker        | 2024 EPS (NT$) | 2025 EPS (NT$) |
+    | :----------------------------------------------------------------- | :------------ | :------------- | :------------- |
+    | Century Iron and Steel Industrial Co.                             | 9958 TT, CIAS | 7.82           | 12.74          |
+    | Century Wind Power Co.                                             | 2072 TT, CWP  | 10.70          | 18.20          |
+    | Century Huaxin Wind Energy Co.                                     | 7752 TT, CHWE | 0.27           | 8.02           |
+
+*   **Investment Opportunity:**
+    *   Century Group's members have traded between 15-25x of their respective 1-year forward EPS.
+    *   Analyst expects persistent earnings growth.
+
+*   **Buy Recommendations:**
+
+    | Company             | Ticker   | Target Price (NT\$) | Notes                     |
+    | :------------------ | :------- | :------------------ | :------------------------ |
+    | Century Iron & Steel| 9958 TT  | 254                | 20x 2025F EPS             |
+    | Century Wind Power  | 2072 TT  | 400                | 22x 2025F EPS             |
+    | Century Huaxin Wind Energy | 7752 TT  | 160                | 20x 2025F EPS             |
+
+*   **Operations Overview**
+    *   CHWE is targeting wind turbine tower certification this year.
+    *   CHWE began wind turbine generator (WTG) certification process for wind turbine developers in JUL 2024.
+
+*   **Catalysts for Growth in 2025**
+    *   Key sales contributors in 2025 will comprise Hai Long project's final assembly (completion slated for 2Q25), Phase 1 Fengmiao (final assembly slated for 3Q25), Formosa 4, and Wei Lan Hai Changhua projects.
+    *   Expects conspicuous sales/earnings growth for 2025 due to higher jacket foundation tonnage (e.g., Fengmiao averaging 2,200 metric tons (MTs) and can reach 2500-2600 MTs).
+    *   Expects NT$4-6bn of sales from pin pile business upon CHWE's plant completion, producing 150-200 pin pile sets annually.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 2 (page_number=2)
+============================================================
+  Page chunk_id=a433c475-1ec6-466c-9c5b-5b14088f41d1
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 2, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page in Markdown format:
+
+**Key Takeaways:**
+
+*   Century Group anticipates strong demand for Round 3 wind farm projects, particularly in Asia-Pacific.
+*   The company is well-positioned to compete internationally due to its competitiveness and comprehensive supply chain.
+*   The trend toward higher wattage wind turbines (21.5MW) will drive demand for heavier jackets, benefitting Century Group.
+*   Wind power was the fastest-growing renewable energy source in Taiwan in 2023.
+*   Taiwan is adjusting its renewable energy targets due to development delays.
+
+**Data Tables:**
+
+| Category                                  | Data                                                                                                                                                             |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Round 3 Wind Farm Potential               | 2.64GW/2.70GW allocated for Phase 1/2, potential orders for 300+ jackets and 1,000 pin piles.                                                                |
+| Wind Turbine Specifications             | 14.5MW turbine needs ~200MT jacket.  Siemens developing 21.5MW turbines.                                                                                            |
+| Taiwan 2023 Energy Mix                    | Coal (42.24%), Natural Gas (39.57%), Renewable Energy (9.47%), Nuclear Energy (6.31%), Fuel Oil (1.34%), Pumped Hydropower (1.08%)                             |
+| Taiwan 2023 Renewable Energy Mix          | Photovoltaic (4.58%), Wind (2.20%), Conventional Hydropower (1.40%), Waste (1.20%), Bioenergy (0.08%), Geothermal (0.01%)                                         |
+| Renewable Energy Growth (2023, YoY)       | Wind (+73.64%), Bioenergy (+48.73%), Solar Photovoltaic (+20.90%), Conventional Hydropower (-32.09%), Waste (-6.20%), Geothermal (-7.4%)                          |
+| Taiwan Renewable Energy Capacity Increase | 14.1GW (2022) -> 17.9GW (2023).  As of Oct 2024: 20.6GW (includes 1.4GW solar and 1.2GW offshore wind).                                                          |
+| Taiwan Renewable Energy Targets           | 15.5% by 2025 (adjusted target, was previously 20%), 20% by Nov 2026.                                                                                          |
+    content: Here's a summary of the financial report page in Markdown format:
+
+**Key Takeaways:**
+
+*   Century Group anticipates strong demand for Round 3 wind farm projects, particularly in Asia-Pacific.
+*   The company is well-positioned to compete internationally due to its competitiveness and comprehensive supply chain.
+*   The trend toward higher wattage wind turbines (21.5MW) will drive demand for heavier jackets, benefitting Century Group.
+*   Wind power was the fastest-growing renewable energy source in Taiwan in 2023.
+*   Taiwan is adjusting its renewable energy targets due to development delays.
+
+**Data Tables:**
+
+| Category                                  | Data                                                                                                                                                             |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Round 3 Wind Farm Potential               | 2.64GW/2.70GW allocated for Phase 1/2, potential orders for 300+ jackets and 1,000 pin piles.                                                                |
+| Wind Turbine Specifications             | 14.5MW turbine needs ~200MT jacket.  Siemens developing 21.5MW turbines.                                                                                            |
+| Taiwan 2023 Energy Mix                    | Coal (42.24%), Natural Gas (39.57%), Renewable Energy (9.47%), Nuclear Energy (6.31%), Fuel Oil (1.34%), Pumped Hydropower (1.08%)                             |
+| Taiwan 2023 Renewable Energy Mix          | Photovoltaic (4.58%), Wind (2.20%), Conventional Hydropower (1.40%), Waste (1.20%), Bioenergy (0.08%), Geothermal (0.01%)                                         |
+| Renewable Energy Growth (2023, YoY)       | Wind (+73.64%), Bioenergy (+48.73%), Solar Photovoltaic (+20.90%), Conventional Hydropower (-32.09%), Waste (-6.20%), Geothermal (-7.4%)                          |
+| Taiwan Renewable Energy Capacity Increase | 14.1GW (2022) -> 17.9GW (2023).  As of Oct 2024: 20.6GW (includes 1.4GW solar and 1.2GW offshore wind).                                                          |
+| Taiwan Renewable Energy Targets           | 15.5% by 2025 (adjusted target, was previously 20%), 20% by Nov 2026.                                                                                          |
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 3 (page_number=3)
+============================================================
+  Page chunk_id=492f5112-0706-4b87-bbe0-b62458adf0e5
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 3, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page, broken down into sections with tables for chart data.
+
+**Overview**
+
+The page provides a snapshot of Taiwan's power generation mix in 2023 and a trend of the power mix from 2019 to 2023.  It also includes updates on wind energy installations in Taiwan.
+
+**Figure 1: Taiwan's power generation mix in 2023**
+
+*   **Overall:**  Taiwan generated 26.71 billion kWh of power in 2023.
+*   **Primary Sources:**  Coal and gas are the dominant power sources.
+
+| Source        | Percentage | kWh (Total) |
+| ------------- | ---------- | -------- |
+| Gas           | 40%        | N/A      |
+| Coal          | 42%        | N/A      |
+| Renewables    | 10%        | N/A      |
+| Nuclear       | 6%         | N/A      |
+| Oil           | 1%         | N/A      |
+| Pumped hydro  | 1%         | N/A      |
+| Waste         | N/A        | 1.20bn   |
+| Conv. hydro   | N/A        | 1.40bn   |
+| Wind power    | N/A        | 2.20bn   |
+| Solar         | N/A        | 4.58bn   |
+| Geothermal    | N/A        | 0.01bn   |
+| Biomass       | N/A        | 0.08bn   |
+
+**Figure 2: Taiwan's power mix in 2019-2023**
+
+*   **Trend:** Renewable sources have been increasing, especially from 2019 to 2023. Coal and Gas remain the major energy sources.
+
+| Source         | 2019 | 2020 | 2021 | 2022 | 2023 |
+| -------------- | ---- | ---- | ---- | ---- | ---- |
+| Renewable      | 6%   | 6%   | 6%   | 9%   | 10%  |
+| Gas            | 38%  | 41%  | 43%  | 43%  | 44%  |
+| Coal           | 37%  | 36%  | 35%  | 35%  | 34%  |
+| Nuclear        | 13%  | 13%  | 11%  | 9%   | 7%   |
+| Oil            | 2%   | 1%   | 2%   | 1%   | 1%   |
+| Co-generation  | 2%   | 2%   | 2%   | 1%   | 2%   |
+| Pumped hydro   | 1%   | 1%   | 1%   | 1%   | 1%   |
+
+**Wind Energy Updates in Taiwan**
+
+*   **Growth:** Global offshore installed wind capacity reached 75.2GW by year-end 2023, an increase of 10.8GW (+24% YoY).
+*   **Forecast:** GWEC projects a 6.6% CAGR for onshore installed wind capacity for 2024-2028, with an average installation of 130 GW/year. Offshore wind capacity is estimated to show a CAGR of 28% (2024-2028) with 138GW new installations, an average of 27.6GW/year.
+*   **Regional Installs:** New installations: Europe (42GW), China (72GW), Taiwan (6.9GW), South Korea (3.1GW), and Japan (1.7GW).
+*   **Turbine Numbers:** 283 wind turbines were installed as of end-2023 with offshore capacity totaling 1.76GW. 343 wind turbines installed by end-OCT 2024.
+    content: Here's a summary of the provided financial report page, broken down into sections with tables for chart data.
+
+**Overview**
+
+The page provides a snapshot of Taiwan's power generation mix in 2023 and a trend of the power mix from 2019 to 2023.  It also includes updates on wind energy installations in Taiwan.
+
+**Figure 1: Taiwan's power generation mix in 2023**
+
+*   **Overall:**  Taiwan generated 26.71 billion kWh of power in 2023.
+*   **Primary Sources:**  Coal and gas are the dominant power sources.
+
+| Source        | Percentage | kWh (Total) |
+| ------------- | ---------- | -------- |
+| Gas           | 40%        | N/A      |
+| Coal          | 42%        | N/A      |
+| Renewables    | 10%        | N/A      |
+| Nuclear       | 6%         | N/A      |
+| Oil           | 1%         | N/A      |
+| Pumped hydro  | 1%         | N/A      |
+| Waste         | N/A        | 1.20bn   |
+| Conv. hydro   | N/A        | 1.40bn   |
+| Wind power    | N/A        | 2.20bn   |
+| Solar         | N/A        | 4.58bn   |
+| Geothermal    | N/A        | 0.01bn   |
+| Biomass       | N/A        | 0.08bn   |
+
+**Figure 2: Taiwan's power mix in 2019-2023**
+
+*   **Trend:** Renewable sources have been increasing, especially from 2019 to 2023. Coal and Gas remain the major energy sources.
+
+| Source         | 2019 | 2020 | 2021 | 2022 | 2023 |
+| -------------- | ---- | ---- | ---- | ---- | ---- |
+| Renewable      | 6%   | 6%   | 6%   | 9%   | 10%  |
+| Gas            | 38%  | 41%  | 43%  | 43%  | 44%  |
+| Coal           | 37%  | 36%  | 35%  | 35%  | 34%  |
+| Nuclear        | 13%  | 13%  | 11%  | 9%   | 7%   |
+| Oil            | 2%   | 1%   | 2%   | 1%   | 1%   |
+| Co-generation  | 2%   | 2%   | 2%   | 1%   | 2%   |
+| Pumped hydro   | 1%   | 1%   | 1%   | 1%   | 1%   |
+
+**Wind Energy Updates in Taiwan**
+
+*   **Growth:** Global offshore installed wind capacity reached 75.2GW by year-end 2023, an increase of 10.8GW (+24% YoY).
+*   **Forecast:** GWEC projects a 6.6% CAGR for onshore installed wind capacity for 2024-2028, with an average installation of 130 GW/year. Offshore wind capacity is estimated to show a CAGR of 28% (2024-2028) with 138GW new installations, an average of 27.6GW/year.
+*   **Regional Installs:** New installations: Europe (42GW), China (72GW), Taiwan (6.9GW), South Korea (3.1GW), and Japan (1.7GW).
+*   **Turbine Numbers:** 283 wind turbines were installed as of end-2023 with offshore capacity totaling 1.76GW. 343 wind turbines installed by end-OCT 2024.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 4 (page_number=4)
+============================================================
+  Page chunk_id=ab6418ae-6dc5-4edc-af89-602efcde214c
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 4, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page, broken down into its figures and corresponding insights:
+
+**Figure 3: Global new wind turbine installations in 2023-2028 (GW)**
+
+| Category | 2023 | 2024e | 2025e | 2026e | 2027e | 2028e |
+|---|---|---|---|---|---|---|
+| Onshore | 106 | 113 | 124 | 130 | 140 | 145 |
+| Offshore | 11 | 18 | 24 | 29 | 31 | 37 |
+
+*   **Overall Trend:** Global new wind turbine installations are projected to steadily increase from 2023 to 2028.
+*   **Onshore vs. Offshore:** Onshore installations constitute the major part of global new wind turbine installations.
+*   **Growth:** Offshore installations show a significant increase from 11 GW in 2023 to 37 GW in 2028.
+
+**Figure 4: New wind turbine installations in Taiwan (MW)**
+
+| Category | 2020 | 2021 | 2022 | 2023 | 10M24 |
+|---|---|---|---|---|---|
+| Onshore | 809 | 825 | 836 | 911 | 919 |
+| Offshore | 128 | 269 | 745 | 1763 | 2939 |
+
+*   **Overall Trend:** New wind turbine installations in Taiwan have experienced a significant growth from 2020 to 2024.
+*   **Onshore vs. Offshore:** Offshore installations exhibit a substantial increase, significantly contributing to the overall growth.
+*   **Insight:** Offshore installations in Taiwan saw a very rapid growth.
+
+**Key Takeaways:**
+
+*   Global new wind turbine installations are expected to grow between 2023 and 2028, with onshore capacity dominating.
+*   Taiwan's wind turbine installations have increased significantly, driven mainly by a rise in offshore capacity. The offshore installations in Taiwan experienced more rapid growth than the global offshore installation.
+    content: Here's a summary of the financial report page, broken down into its figures and corresponding insights:
+
+**Figure 3: Global new wind turbine installations in 2023-2028 (GW)**
+
+| Category | 2023 | 2024e | 2025e | 2026e | 2027e | 2028e |
+|---|---|---|---|---|---|---|
+| Onshore | 106 | 113 | 124 | 130 | 140 | 145 |
+| Offshore | 11 | 18 | 24 | 29 | 31 | 37 |
+
+*   **Overall Trend:** Global new wind turbine installations are projected to steadily increase from 2023 to 2028.
+*   **Onshore vs. Offshore:** Onshore installations constitute the major part of global new wind turbine installations.
+*   **Growth:** Offshore installations show a significant increase from 11 GW in 2023 to 37 GW in 2028.
+
+**Figure 4: New wind turbine installations in Taiwan (MW)**
+
+| Category | 2020 | 2021 | 2022 | 2023 | 10M24 |
+|---|---|---|---|---|---|
+| Onshore | 809 | 825 | 836 | 911 | 919 |
+| Offshore | 128 | 269 | 745 | 1763 | 2939 |
+
+*   **Overall Trend:** New wind turbine installations in Taiwan have experienced a significant growth from 2020 to 2024.
+*   **Onshore vs. Offshore:** Offshore installations exhibit a substantial increase, significantly contributing to the overall growth.
+*   **Insight:** Offshore installations in Taiwan saw a very rapid growth.
+
+**Key Takeaways:**
+
+*   Global new wind turbine installations are expected to grow between 2023 and 2028, with onshore capacity dominating.
+*   Taiwan's wind turbine installations have increased significantly, driven mainly by a rise in offshore capacity. The offshore installations in Taiwan experienced more rapid growth than the global offshore installation.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 5 (page_number=5)
+============================================================
+  Page chunk_id=b95383cf-e07b-4e2f-aa34-046f899b8342
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 5, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format:
+
+**Figure 5: 2023 Global Offshore Wind Turbine Installations by Market**
+
+The pie chart shows the global distribution of offshore wind turbine installations in 2023. The total installed capacity is 10.8 GW.
+
+| Country/Region   | Market Share (%) |
+| :--------------- | :--------------- |
+| China            | 58               |
+| Netherlands      | 18               |
+| UK               | 8                |
+| Rest of World   | 7                |
+| Taiwan           | 6                |
+| France           | 3                |
+
+**Visual Insights:**
+*   China dominates the offshore wind turbine installation market with 58% share.
+*   Netherlands is the second largest market with 18% share.
+
+**Taiwan's 3 Rounds of Wind Energy Development**
+Taiwan is implementing three rounds of wind energy development programs: Demonstration Incentive Program (DIP), Zones Application for Planning (ZAP), and Zonal Development.
+
+*   **Round 1 (DIP):** Aimed to incentivize investors. Two demonstration wind farms were completed in 2020, with a total installed capacity of 237.2MW.
+*   **Round 2 (ZAP):** The government formulated a plan to select potential zones in 2018. A total of 3,836MW was awarded to seven developers. An additional 1,664MW was later awarded, with a grid connection target of 2025.
+*   **Round 3 (Zonal Development):** Split into two stages. Stage 1 (2026-2031) will allocate 9GW, averaging 1.5GW per year. Stage 2 (2032-2035) will release 6GW. In Stage 1, Phase 1 had 2.3GW of development rights signed by five developers in AUG 2023. Phase 2 had 2.7GW allocated with results announced in JUL 2024, grid connection targeted 2028-2029. Phase 3 to allocate 3GW between 2030-2031.
+
+**Updates on Taiwan's Offshore Wind Farm Development Progress**
+Several wind farms were incorporated into the grid in 2024, including Ørsted's Greater Changhua 1 (605MW) and Greater Changhua 2a (295MW), and CIP's Changfang and Xidao wind farm. However, the grid connection goal of Phase 1 projects has been rescheduled to 2027-2028 due to surging construction costs and shortages of key offshore construction vessels.
+    content: Here's a summary of the provided financial report page in Markdown format:
+
+**Figure 5: 2023 Global Offshore Wind Turbine Installations by Market**
+
+The pie chart shows the global distribution of offshore wind turbine installations in 2023. The total installed capacity is 10.8 GW.
+
+| Country/Region   | Market Share (%) |
+| :--------------- | :--------------- |
+| China            | 58               |
+| Netherlands      | 18               |
+| UK               | 8                |
+| Rest of World   | 7                |
+| Taiwan           | 6                |
+| France           | 3                |
+
+**Visual Insights:**
+*   China dominates the offshore wind turbine installation market with 58% share.
+*   Netherlands is the second largest market with 18% share.
+
+**Taiwan's 3 Rounds of Wind Energy Development**
+Taiwan is implementing three rounds of wind energy development programs: Demonstration Incentive Program (DIP), Zones Application for Planning (ZAP), and Zonal Development.
+
+*   **Round 1 (DIP):** Aimed to incentivize investors. Two demonstration wind farms were completed in 2020, with a total installed capacity of 237.2MW.
+*   **Round 2 (ZAP):** The government formulated a plan to select potential zones in 2018. A total of 3,836MW was awarded to seven developers. An additional 1,664MW was later awarded, with a grid connection target of 2025.
+*   **Round 3 (Zonal Development):** Split into two stages. Stage 1 (2026-2031) will allocate 9GW, averaging 1.5GW per year. Stage 2 (2032-2035) will release 6GW. In Stage 1, Phase 1 had 2.3GW of development rights signed by five developers in AUG 2023. Phase 2 had 2.7GW allocated with results announced in JUL 2024, grid connection targeted 2028-2029. Phase 3 to allocate 3GW between 2030-2031.
+
+**Updates on Taiwan's Offshore Wind Farm Development Progress**
+Several wind farms were incorporated into the grid in 2024, including Ørsted's Greater Changhua 1 (605MW) and Greater Changhua 2a (295MW), and CIP's Changfang and Xidao wind farm. However, the grid connection goal of Phase 1 projects has been rescheduled to 2027-2028 due to surging construction costs and shortages of key offshore construction vessels.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 6 (page_number=6)
+============================================================
+  Page chunk_id=c1419d1b-7db5-4461-af2e-1031a8e63c94
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 6, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format.
+
+**Key Takeaways**
+
+*   Yunneng Wind Power Co. has connected 80 turbines to the grid.
+*   5 wind farms were selected in Phase 2, with a combined allocation of 2.7GW.
+*   Taiwan is implementing a multi-round strategy for wind farm development.
+*   Round 3 has a total planned capacity of 15GW from 2026-2035.
+
+**Table: Taiwan's Wind Farm Development Policies (Fig. 6)**
+
+| Round        | Allocation Mechanism | Details                                                                                                                            |
+|--------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Round 1 (DIP) | Formosa               | 128MW                                                                                                                            |
+|              | Taipower              | 109.2MW                                                                                                                           |
+| Round 2 (ZAP) | Selection             | 7 firms/10 projects, 3836MW allocated                                                                                              |
+|              | Auction               | 2 firms/4 projects, 1664MW allocated                                                                                               |
+| Round 3 (Zonal development) | N/A | 2026-35 total capacity: 15GW (1.5GW/yr). Phase 1 (2027-28): 5 companies have signed contracts. Subsequent phases outlined with timelines. |
+
+**Visual Insights**
+
+*   Taiwan is moving from DIP and ZAP rounds towards a Zonal development approach for wind farms.
+*   The Zonal development (Round 3) is planned in three phases, with increasing timelines.
+
+**Table: Taiwan's Round 3 Wind Power Development Plan (Fig. 7)**
+
+| Stage | Timeframe   | Capacity | Details                                                                                                                              |
+|-------|-------------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Stage 1 | 2026-2031 | 9 GW     |  Phase 1: Grid integration (2027-2028), Allocation: 3GW, Five companies have signed contracts.  Phase 2: Grid integration (2028-2029), Allocation: 3GW, Review results announced in JUL 2024. Phase 3: Grid integration (2030-2031), Allocation: 3GW                                                               |
+| Stage 2 | 2032-2035 | 6 GW     | Planning will depend on results of Stage 1 and global technology development.                                                       |
+
+**Table: Overview of Round 2 Wind Farm Selection Results (Table 1)**
+
+| Allocation Mechanism | Wind Farm         | Developer           | Allocated Capacity (MW) | Grid Connection Schedule | Update                               |
+|----------------------|-------------------|---------------------|-------------------------|--------------------------|--------------------------------------|
+| Selection            | Formosa 2         | SRE, J&V Energy, JERA | 378                     | 2020                     | Connected in MAR 2023                |
+| Selection            | OWF Yunlin        | wpd                  | 360                     | 2021                     | 80 wind turbines installed as of SEP 2024      |
+| Selection            | OWF Yunlin        | wpd                  | 348                     | 2021                     | N/A                                        |
+| Selection            | Greater Changhua 1| Ørsted               | 605                     | 2021                     | Connected in APR 2024                |
+| Selection            | Greater Changhua 2a| Ørsted               | 295                     | 2021                     | Connected in APR 2024                |
+    content: Here's a summary of the provided financial report page in Markdown format.
+
+**Key Takeaways**
+
+*   Yunneng Wind Power Co. has connected 80 turbines to the grid.
+*   5 wind farms were selected in Phase 2, with a combined allocation of 2.7GW.
+*   Taiwan is implementing a multi-round strategy for wind farm development.
+*   Round 3 has a total planned capacity of 15GW from 2026-2035.
+
+**Table: Taiwan's Wind Farm Development Policies (Fig. 6)**
+
+| Round        | Allocation Mechanism | Details                                                                                                                            |
+|--------------|-----------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| Round 1 (DIP) | Formosa               | 128MW                                                                                                                            |
+|              | Taipower              | 109.2MW                                                                                                                           |
+| Round 2 (ZAP) | Selection             | 7 firms/10 projects, 3836MW allocated                                                                                              |
+|              | Auction               | 2 firms/4 projects, 1664MW allocated                                                                                               |
+| Round 3 (Zonal development) | N/A | 2026-35 total capacity: 15GW (1.5GW/yr). Phase 1 (2027-28): 5 companies have signed contracts. Subsequent phases outlined with timelines. |
+
+**Visual Insights**
+
+*   Taiwan is moving from DIP and ZAP rounds towards a Zonal development approach for wind farms.
+*   The Zonal development (Round 3) is planned in three phases, with increasing timelines.
+
+**Table: Taiwan's Round 3 Wind Power Development Plan (Fig. 7)**
+
+| Stage | Timeframe   | Capacity | Details                                                                                                                              |
+|-------|-------------|----------|--------------------------------------------------------------------------------------------------------------------------------------|
+| Stage 1 | 2026-2031 | 9 GW     |  Phase 1: Grid integration (2027-2028), Allocation: 3GW, Five companies have signed contracts.  Phase 2: Grid integration (2028-2029), Allocation: 3GW, Review results announced in JUL 2024. Phase 3: Grid integration (2030-2031), Allocation: 3GW                                                               |
+| Stage 2 | 2032-2035 | 6 GW     | Planning will depend on results of Stage 1 and global technology development.                                                       |
+
+**Table: Overview of Round 2 Wind Farm Selection Results (Table 1)**
+
+| Allocation Mechanism | Wind Farm         | Developer           | Allocated Capacity (MW) | Grid Connection Schedule | Update                               |
+|----------------------|-------------------|---------------------|-------------------------|--------------------------|--------------------------------------|
+| Selection            | Formosa 2         | SRE, J&V Energy, JERA | 378                     | 2020                     | Connected in MAR 2023                |
+| Selection            | OWF Yunlin        | wpd                  | 360                     | 2021                     | 80 wind turbines installed as of SEP 2024      |
+| Selection            | OWF Yunlin        | wpd                  | 348                     | 2021                     | N/A                                        |
+| Selection            | Greater Changhua 1| Ørsted               | 605                     | 2021                     | Connected in APR 2024                |
+| Selection            | Greater Changhua 2a| Ørsted               | 295                     | 2021                     | Connected in APR 2024               ...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 7 (page_number=7)
+============================================================
+  Page chunk_id=00cf0c7d-701e-43c4-83f9-06b033010757
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 7, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's the summarized financial report in Markdown format:
+
+## Analysis of Wind Farm Projects
+
+This report section provides an overview of several wind farm projects, including their developers, capacity, and construction timelines.
+
+### Summary of Wind Farm Projects
+
+*   Several wind farm projects are underway with different developers and completion timelines. Some projects have experienced delays, while others are on schedule. The projects are located in Taiwan.
+
+### Table 1: Overview of Wind Farm Projects
+
+| Wind Farm       | Developer                                                                        | Allocated Capacity (MW) | Grid Connection Schedule | Update                                                                                                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------- | ----------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hai Long 2A     | Northland Power Inc (NPI), Yushan Energy, Gentari, Mitsui & Co.                 | 294                   | 2024                       | Grid connection delayed to 2025; Large jacket foundation assembly/installation began in DEC 2024                                                                                                                     |
+| Taipower Phase 2 | Taipower (contracted to Foxwell Energy)                                       | 300                   | 2025                       | Piling works began in JUL 2024                                                                                                                                                                                               |
+| Changfang       | CIP, Global Power Synergy Public Company (GPSC) GSPC, Taiwan Life, TransGlobe Life | 100                   | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Changfang       | CIP, GSPC, Taiwan Life, TransGlobe Life                                        | 452                   | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Xidao           | CIP, GSPC, Taiwan Life, TransGlobe Life                                        | 48                    | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Haixia Phase 1  | Lealea Group                                                                    | 300                   | 2025                       | Completion slated forend-2025; this is the replacement for the Liwei Project whose construction permit was canceled in AUG 2022                                                                                             |
+| Zhongneng       | China Steel (51%), CIP (49%)                                                    | 300                   | 2024                       | Completion aimed at end-2024                                                                                                                                                                                                |
+
+**Visual Insights:**
+
+*   Several wind farm projects (Changfang and Xidao) completed construction in May 2024.
+*   The Hai Long 2A project grid connection has been delayed to 2025.
+
+**Source:** WindTaiwan, SinoPac
+
+### Table 2: Overview of Round 2 Wind Farm Auction Results
+
+| Allocation Mechanism | Wind Farm       | Developer                                 | Allocated Capacity (MW) | Grid Connection Schedule | Update                                                          |
+| --------------------- | --------------- | ----------------------------------------- | ----------------------- | -------------------------- | --------------------------------------------------------------- |
+| Auction               | Hai Long 2B     | NPI, Yushan Energy, Gentari, Mitsui & Co. | 224                   | 2025                       | Grid connection for Hai Long 2B/3 to be delayed to 2026         |
+| Auction               | Hai Long 3      | NPI, Yushan Energy, Gentari, Mitsui & Co. | 504                   | 2025                       | Construction completion slated for end-2025...
+    content: Here's the summarized financial report in Markdown format:
+
+## Analysis of Wind Farm Projects
+
+This report section provides an overview of several wind farm projects, including their developers, capacity, and construction timelines.
+
+### Summary of Wind Farm Projects
+
+*   Several wind farm projects are underway with different developers and completion timelines. Some projects have experienced delays, while others are on schedule. The projects are located in Taiwan.
+
+### Table 1: Overview of Wind Farm Projects
+
+| Wind Farm       | Developer                                                                        | Allocated Capacity (MW) | Grid Connection Schedule | Update                                                                                                                                                                                                                       |
+| --------------- | -------------------------------------------------------------------------------- | ----------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hai Long 2A     | Northland Power Inc (NPI), Yushan Energy, Gentari, Mitsui & Co.                 | 294                   | 2024                       | Grid connection delayed to 2025; Large jacket foundation assembly/installation began in DEC 2024                                                                                                                     |
+| Taipower Phase 2 | Taipower (contracted to Foxwell Energy)                                       | 300                   | 2025                       | Piling works began in JUL 2024                                                                                                                                                                                               |
+| Changfang       | CIP, Global Power Synergy Public Company (GPSC) GSPC, Taiwan Life, TransGlobe Life | 100                   | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Changfang       | CIP, GSPC, Taiwan Life, TransGlobe Life                                        | 452                   | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Xidao           | CIP, GSPC, Taiwan Life, TransGlobe Life                                        | 48                    | 2024                       | Construction completed in MAY 2024                                                                                                                                                                                             |
+| Haixia Phase 1  | Lealea Group                                                                    | 300                   | 2025                       | Completion slated forend-2025; this is the replacement for the Liwei Project whose construction permit was canceled in AUG 2022                                                                                             |
+| Zhongneng       | China Steel (51%), CIP (49%)                                                    | 300                   | 2024                       | Completion aimed at end-2024                                                                                                                                                                                                |
+
+**Visual Insights:**
+
+*   Several wind farm projects (Changfang and Xidao) comple...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 8 (page_number=8)
+============================================================
+  Page chunk_id=ccc40c92-da18-45bd-972b-0dca7c623f4d
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 8, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here is a summary of the financial report page, extracting key data and visual insights into Markdown tables.
+
+**Overall Summary:**
+
+This page of the report details the location of wind farms for Phase 1, Round 3, and the auction results for Phase 2, Round 3 of zonal development. The locations of various wind farms (e.g., Fengmiao, Haiding) are marked on a map.  Table 4 lists the wind farms, developers, capacities, grid connection targets, and related updates.
+
+**Visual Insights from Map (Fig.8):**
+
+*   The map shows the approximate locations of wind farms, including Fengmiao, Haiding 2, Haixia 3-1, and Formosa 4.
+*   Wei Lan Hai Changhua (previously Huan Yang) is located next to the Changhua County
+
+**Table Summary (Table 4): Phase 2, Round 3 Zonal Development Wind Farm Auction Results**
+
+| Wind farm  | Developer                                | Capacity (MW) | Latest grid connection target | Update                                                                                                |
+| :--------- | :--------------------------------------- | :------------ | :---------------------------- | :---------------------------------------------------------------------------------------------------- |
+| Fengmiao 2 | CIP                                      | 600           | 2029                          | -                                                                                                   |
+| Haiding 1  | Corio Generation, TotalEnergies        | 360           | 2028                          | -                                                                                                   |
+| Youde      | Shinfox                                  | 700           | 2029                          | Overlaps with SRE's Haiding 3                                                                       |
+| Formosa 6  | SRE                                      | 800           | 2029                          | Overlaps with Ørsted's Greater Changhua 2b                                                           |
+| Meisen     | Deshuai                                  | 240           | 2028                          | -                                                                                                   |
+
+**Key Data Points from Table 4:**
+
+*   Formosa 6 has the highest capacity among the listed wind farms, at 800 MW.
+*   Meisen has the lowest capacity, at 240 MW.
+*   Latest grid connection targets are between 2028 and 2029.
+*   Two wind farms (Youde and Formosa 6) have overlaps with other projects.
+    content: Here is a summary of the financial report page, extracting key data and visual insights into Markdown tables.
+
+**Overall Summary:**
+
+This page of the report details the location of wind farms for Phase 1, Round 3, and the auction results for Phase 2, Round 3 of zonal development. The locations of various wind farms (e.g., Fengmiao, Haiding) are marked on a map.  Table 4 lists the wind farms, developers, capacities, grid connection targets, and related updates.
+
+**Visual Insights from Map (Fig.8):**
+
+*   The map shows the approximate locations of wind farms, including Fengmiao, Haiding 2, Haixia 3-1, and Formosa 4.
+*   Wei Lan Hai Changhua (previously Huan Yang) is located next to the Changhua County
+
+**Table Summary (Table 4): Phase 2, Round 3 Zonal Development Wind Farm Auction Results**
+
+| Wind farm  | Developer                                | Capacity (MW) | Latest grid connection target | Update                                                                                                |
+| :--------- | :--------------------------------------- | :------------ | :---------------------------- | :---------------------------------------------------------------------------------------------------- |
+| Fengmiao 2 | CIP                                      | 600           | 2029                          | -                                                                                                   |
+| Haiding 1  | Corio Generation, TotalEnergies        | 360           | 2028                          | -                                                                                                   |
+| Youde      | Shinfox                                  | 700           | 2029                          | Overlaps with SRE's Haiding 3                                                                       |
+| Formosa 6  | SRE                                      | 800           | 2029                          | Overlaps with Ørsted's Greater Changhua 2b                                                           |
+| Meisen     | Deshuai                                  | 240           | 2028                          | -                                                                                                   |
+
+**Key Data Points from Table 4:**
+
+*   Formosa 6 has the highest capacity among the listed wind farms, at 800 MW.
+*   Meisen has the lowest capacity, at 240 MW.
+*   Latest grid connection targets are between 2028 and 2029.
+*   Two wind farms (Youde and Formosa 6) have overlaps with other projects.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 9 (page_number=9)
+============================================================
+  Page chunk_id=13732247-3e68-45dc-976b-73537ba7c03e
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 9, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page in Markdown format:
+
+## Summary of Financial Report - Page 9
+
+This page of the financial report focuses on the Phase 2, Round 3 wind farm locations and provides an overview of Century Group's operations related to these wind farms. The company's plants are located across Western Taiwan. Each member has it's own role.
+
+### Figure 9: Phase 2, Round 3 Wind Farm Locations
+
+The image shows a map of Western Taiwan with several wind farm locations marked.  The locations are labeled as Youde, Haiding 1, Haiding 3, and Haixia 3-2. Specific wind farm sites within these larger locations are numbered.
+
+| Category       | Description                                                                                                                                  |
+|----------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Wind Farms     | Youde, Haiding 1, Haiding 3, Haixia 3-2                                                                                                   |
+|  Locations     | Wind farms are located offshore of Miaoli County, Taichung County, Changhua County, Yunlin County and Penghu County                         |
+|Numbered Sites |The Numbers mark specific locations within the larger labeled zones|
+| Source         | WindTaiwan, SinoPac                                                                                                                              |
+
+### Operations Overview
+
+*   **Key Insight:** Century Group's plants are strategically located across western Taiwan and each group member has it's own role.
+*   **CIAS:** Responsible for traditional steel structures and the front-end process of underwater foundations. Has production bases in Guanyin and Yunlin.
+*   **CHWE (Taichung Port):** Responsible for the production and assembly of wind turbine generator (WTG) towers, upper legs, X-braces, and pin piles.
+*   **CWP (Taipei Port):** Engaged in the manufacture, assembly, and vessel loading/shipping of transition pieces and jacket foundations.
+    content: Here's a summary of the financial report page in Markdown format:
+
+## Summary of Financial Report - Page 9
+
+This page of the financial report focuses on the Phase 2, Round 3 wind farm locations and provides an overview of Century Group's operations related to these wind farms. The company's plants are located across Western Taiwan. Each member has it's own role.
+
+### Figure 9: Phase 2, Round 3 Wind Farm Locations
+
+The image shows a map of Western Taiwan with several wind farm locations marked.  The locations are labeled as Youde, Haiding 1, Haiding 3, and Haixia 3-2. Specific wind farm sites within these larger locations are numbered.
+
+| Category       | Description                                                                                                                                  |
+|----------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| Wind Farms     | Youde, Haiding 1, Haiding 3, Haixia 3-2                                                                                                   |
+|  Locations     | Wind farms are located offshore of Miaoli County, Taichung County, Changhua County, Yunlin County and Penghu County                         |
+|Numbered Sites |The Numbers mark specific locations within the larger labeled zones|
+| Source         | WindTaiwan, SinoPac                                                                                                                              |
+
+### Operations Overview
+
+*   **Key Insight:** Century Group's plants are strategically located across western Taiwan and each group member has it's own role.
+*   **CIAS:** Responsible for traditional steel structures and the front-end process of underwater foundations. Has production bases in Guanyin and Yunlin.
+*   **CHWE (Taichung Port):** Responsible for the production and assembly of wind turbine generator (WTG) towers, upper legs, X-braces, and pin piles.
+*   **CWP (Taipei Port):** Engaged in the manufacture, assembly, and vessel loading/shipping of transition pieces and jacket foundations.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 10 (page_number=10)
+============================================================
+  Page chunk_id=353a7ed8-f97c-49ba-bceb-ef3b421bde40
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 10, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided page, broken down into its components:
+
+**Overall Summary:**
+
+The page provides an overview of Century Group's involvement in the wind power industry. It includes data on their wind power products, their organizational structure, and key events such as market entry and localization requirements.
+
+**Table 1: Century Group's Wind Power Products**
+
+| Feature         | Jacket - Truss | Jacket - Transition Piece |
+|-----------------|----------------|---------------------------|
+| Width (meters)  | 25 - 40        | 10 - 20                   |
+| Height (meters) | 45 - 100       | 10 - 15                   |
+| Weight (tons)   | 1,000 - 2,500  | 300 - 500                 |
+| Annual Production  | 48-72          |  N/A                  |
+| Image | [Image of Jacket - Truss] | [Image of Jacket - Transition Piece] |
+
+**Visual Insight:** The Jacket-Truss components are significantly larger and heavier than the Jacket-Transition Piece components.
+
+**Table 2: Century Group Organizational Chart**
+N/A, Chart not in table format.
+
+**Key Data Points from Organizational Chart:**
+*   **Century Iron & Steel Industrial (9958):** Est. 1987, focuses on steel structure and foundation components.
+*   **Century Wind Power Co., Ltd. (2072):** Est. 2017, focuses on jacket foundations.
+*   **Century Huaxin Wind Energy Co., Ltd. (7752):** Est. 2020, focuses on WTG towers, pin piles, and small pipes.
+*   **Century Heavy Industry International (CHII):** Est. 2019, focuses on heavy lift transport.
+
+**Summary of Textual Information:**
+
+*   **Market Entry:** Century Group entered the wind power market in 2013 and received its first order in 2018. In 2018, they produced 62 jackets and 69 pin piles for Round 2 Changfang & Xidao projects.
+*   **Localization:** Taiwan's localization requirements for offshore wind projects are being relaxed, with exemptions planned for Phase 2.
+*   **SinDa Marine Losses:** SinDa Marine Structure Co. will cease operations due to unsustainable losses.
+    content: Here's a summary of the provided page, broken down into its components:
+
+**Overall Summary:**
+
+The page provides an overview of Century Group's involvement in the wind power industry. It includes data on their wind power products, their organizational structure, and key events such as market entry and localization requirements.
+
+**Table 1: Century Group's Wind Power Products**
+
+| Feature         | Jacket - Truss | Jacket - Transition Piece |
+|-----------------|----------------|---------------------------|
+| Width (meters)  | 25 - 40        | 10 - 20                   |
+| Height (meters) | 45 - 100       | 10 - 15                   |
+| Weight (tons)   | 1,000 - 2,500  | 300 - 500                 |
+| Annual Production  | 48-72          |  N/A                  |
+| Image | [Image of Jacket - Truss] | [Image of Jacket - Transition Piece] |
+
+**Visual Insight:** The Jacket-Truss components are significantly larger and heavier than the Jacket-Transition Piece components.
+
+**Table 2: Century Group Organizational Chart**
+N/A, Chart not in table format.
+
+**Key Data Points from Organizational Chart:**
+*   **Century Iron & Steel Industrial (9958):** Est. 1987, focuses on steel structure and foundation components.
+*   **Century Wind Power Co., Ltd. (2072):** Est. 2017, focuses on jacket foundations.
+*   **Century Huaxin Wind Energy Co., Ltd. (7752):** Est. 2020, focuses on WTG towers, pin piles, and small pipes.
+*   **Century Heavy Industry International (CHII):** Est. 2019, focuses on heavy lift transport.
+
+**Summary of Textual Information:**
+
+*   **Market Entry:** Century Group entered the wind power market in 2013 and received its first order in 2018. In 2018, they produced 62 jackets and 69 pin piles for Round 2 Changfang & Xidao projects.
+*   **Localization:** Taiwan's localization requirements for offshore wind projects are being relaxed, with exemptions planned for Phase 2.
+*   **SinDa Marine Losses:** SinDa Marine Structure Co. will cease operations due to unsustainable losses.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 11 (page_number=11)
+============================================================
+  Page chunk_id=8e1c7dd7-aaf2-4dc2-9fcb-df50823f0fd8
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 11, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format.
+
+## Summary of Financial Report
+
+This page discusses Century Group's strategic initiatives and anticipated growth catalysts. Key points include:
+
+*   **Localization Content Requirements:** Developers might be exempt from localization requirements under specific circumstances.
+*   **Indonesia Plant:** A planned factory in Indonesia aims to reduce costs and boost production capacity.
+*   **Taiwan Wind Power Alliance:** Century Group is building an alliance with Taiwanese suppliers to capture non-localization orders.
+*   **Growth in 2025:** Sales in 2024 were driven by the Taipower and Hai Long projects. 2025 growth is expected from the Hai Long project's final assembly, Phase 1 Fengmiao, Formosa 4, and Wei Lan Hai Changhua projects.  The jacket tonnage for Fengmiao averages 2,200 metric tons (MTs) and can reach up to 2500-2600 MTs, and the expected production output of 150-200 sets of pin piles (PP) is expected to bring NT$4-6bn of sales.
+*   **Round 3 Wind Farms:** Potential orders for 300+ jackets and 1,000 pin piles are anticipated over the next 4-5 years, stemming from Round 3 wind farm projects (2.64GW/2.70GW installed capacity allocated for Phase 1/2). The report notes that demand for offshore wind energy from Asia-Pacific countries is expected to increase from 2030.
+
+There are no tables or charts in this one page.
+    content: Here's a summary of the provided financial report page in Markdown format.
+
+## Summary of Financial Report
+
+This page discusses Century Group's strategic initiatives and anticipated growth catalysts. Key points include:
+
+*   **Localization Content Requirements:** Developers might be exempt from localization requirements under specific circumstances.
+*   **Indonesia Plant:** A planned factory in Indonesia aims to reduce costs and boost production capacity.
+*   **Taiwan Wind Power Alliance:** Century Group is building an alliance with Taiwanese suppliers to capture non-localization orders.
+*   **Growth in 2025:** Sales in 2024 were driven by the Taipower and Hai Long projects. 2025 growth is expected from the Hai Long project's final assembly, Phase 1 Fengmiao, Formosa 4, and Wei Lan Hai Changhua projects.  The jacket tonnage for Fengmiao averages 2,200 metric tons (MTs) and can reach up to 2500-2600 MTs, and the expected production output of 150-200 sets of pin piles (PP) is expected to bring NT$4-6bn of sales.
+*   **Round 3 Wind Farms:** Potential orders for 300+ jackets and 1,000 pin piles are anticipated over the next 4-5 years, stemming from Round 3 wind farm projects (2.64GW/2.70GW installed capacity allocated for Phase 1/2). The report notes that demand for offshore wind energy from Asia-Pacific countries is expected to increase from 2030.
+
+There are no tables or charts in this one page.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 12 (page_number=12)
+============================================================
+  Page chunk_id=f3ef36bb-bf60-471a-9c67-6805cdd3d0fa
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 12, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format.
+
+**Visual Insights from Charts & Tables:**
+
+*   **Wind Farm Status:** The chart shows the projected construction timeline (COD - Commercial Operation Date) for several wind farms. The completion of wind farms TPC2 and HL were expected in 2025. Many wind farm projects ramp up in 2028-2029.
+
+**Data Table: Wind Farm Status**
+
+| PH    | Wind Farm | MW    | Quantity | COD    | Expected Timeline (2024-2030)                             |
+| :---- | :-------- | :---- | :------- | :----- | :------------------------------------------------------ |
+| TPC2  | -         | 300   | 31 JK/124 PP      | 2025   | 2025                                                      |
+| 2     |           |       |        |       |                                                         |
+| HL    | -         | 300   | 21 JK         | 2025   |                                                        |
+| FM1   | -         | 500   | 20 JK/99 PP     | 2027   |                                                         |
+| 3.1   | F4        | 490   | 35 JK/114 PP     | 2028   |                                                     |
+| WLH   | -         | 440   | 32 JK/128 PP     | 2028   |                                                     |
+| F3    | -         | 960   | 68 JK/204 PP     | 2028/2029 |                                                    |
+| F6    | -         | 800   | 57 JK/180 PP     | 2029   |                                                      |
+| 3.2   | YD        | 700   | 50 JK/150 PP     | 2029   |                                                      |
+| FM2   | -         | 600   | 42 JK/126 PP     | 2029   |                                                      |
+| DS    | -         | 240   | 17 JK/51 PP      | 2029   |                                                          |
+| 3.3   |           |       |        |       |                                                         |
+|       |           |       |        |       | ▲ Expected FC/NTP,  Expected JK Production, Expected PP Production |
+
+*   **Legend:**
+    *   `▲`: Expected FC/NTP
+    *   Blue: Expected JK Production
+    *   Green: Expected PP Production
+
+**Company Overview: Century Iron and Steel Industrial Co (9958 TT)**
+
+*   Founded in 1987, listed on TWSE in MAR 2008. Initially focused on traditional steel structures, now focused on offshore wind power foundations.
+*   Key clients: CIP, Ørsted, and wpd Taiwan Energy.
+*   Competitors include: SinDa Marine Structure Co, Formosa Heavy Industries Corporation, CSBC Corp Taiwan, and Ming Rong Yuan Business.
+*   1Q-3Q24 sales mix: 90% wind energy engineering, 10% traditional steel structure engineering.
+*   Shareholding structure: CAIS holds ~60% stake in CWP and ~45% stake in CHWE. CWP began undertaking jacket foundation orders, and CHWE undertaking pin pile orders.
+    content: Here's a summary of the provided financial report page in Markdown format.
+
+**Visual Insights from Charts & Tables:**
+
+*   **Wind Farm Status:** The chart shows the projected construction timeline (COD - Commercial Operation Date) for several wind farms. The completion of wind farms TPC2 and HL were expected in 2025. Many wind farm projects ramp up in 2028-2029.
+
+**Data Table: Wind Farm Status**
+
+| PH    | Wind Farm | MW    | Quantity | COD    | Expected Timeline (2024-2030)                             |
+| :---- | :-------- | :---- | :------- | :----- | :------------------------------------------------------ |
+| TPC2  | -         | 300   | 31 JK/124 PP      | 2025   | 2025                                                      |
+| 2     |           |       |        |       |                                                         |
+| HL    | -         | 300   | 21 JK         | 2025   |                                                        |
+| FM1   | -         | 500   | 20 JK/99 PP     | 2027   |                                                         |
+| 3.1   | F4        | 490   | 35 JK/114 PP     | 2028   |                                                     |
+| WLH   | -         | 440   | 32 JK/128 PP     | 2028   |                                                     |
+| F3    | -         | 960   | 68 JK/204 PP     | 2028/2029 |                                                    |
+| F6    | -         | 800   | 57 JK/180 PP     | 2029   |                                                      |
+| 3.2   | YD        | 700   | 50 JK/150 PP     | 2029   |                                                      |
+| FM2   | -         | 600   | 42 JK/126 PP     | 2029   |                                                      |
+| DS    | -         | 240   | 17 JK/51 PP      | 2029   |                                                          |
+| 3.3   |           |       |        |       |                                                         |
+|       |           |       |        |       | ▲ Expected FC/NTP,  Expected JK Production, Expected PP Production |
+
+*   **Legend:**
+    *   `▲`: Expected FC/NTP
+    *   Blue: Expected JK Production
+    *   Green: Expected PP Production
+
+**Company Overview: Century Iron and Steel Industrial Co (9958 TT)**
+
+*   Founded in 1987, listed on TWSE in MAR 2008. Initially focused on traditional steel structures, now focused on offshore wind power foundations.
+*   Key clients: CIP, Ørsted, and wpd Taiwan Energy.
+*   Competitors include: SinDa Marine Structure Co, Formosa Heavy Industries Corporation, CSBC Corp Taiwan, and Ming Rong Yuan Business.
+*   1Q-3Q24 sales mix: 90% wind energy engineering, 10% traditional steel structure engineering.
+*   Shareholding structure: CAIS holds ~60% stake in CWP and ~45% stake in CHWE. CWP began undertaking jacket foundation orders, and CHWE undertaking pin pile orders.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 13 (page_number=13)
+============================================================
+  Page chunk_id=e0eaab45-b855-44cd-8558-e6ee393a97c4
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 13, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report excerpt in Markdown format:
+
+**Summary**
+
+This page provides an overview of Century Group, focusing on key milestones, site expansion plans, and financial forecasts for CIAS. The milestones table highlights significant events from 1987 to 2024. The sites and expansion plans table details the company's various locations, their activities, area size, and expansion progress. Financial forecasts for CIAS in 2024 show a year-over-year decrease in sales, but a large increase in net profit.
+
+**Table 5: Century Group's Milestones**
+
+| Year | Group Member         | Project/Event                                                                               |
+|------|----------------------|-------------------------------------------------------------------------------------------|
+| 1987 | Establishment of CIAS | N/A                                                                                           |
+| 1994 | N/A                   | Taiwan's 1st semiconductor foundry                                                             |
+| 1998 | N/A                   | New Taipei City Building (largest public engineering project of steel structure then)         |
+| 2003 | N/A                   | Nangang Station                                                                             |
+| 2008 | IPO of CIAS           | IPO of CIAS on TAIEX                                                                          |
+| 2013 | N/A                   | Tapping into offshore wind farm market                                                       |
+| 2015 | Myanmar Century Steel Structure        | Taiwan's 1st met mast for offshore wind farms                                                        |
+| 2017 | Establishment of CWP  | N/A                                                                                           |
+| 2020 | Establishment of CHWE | IPO of CWP on TPEx Emerging Stock Board (ESB)                                               |
+| 2024 | N/A                   | IPO of CHWE on ESB                                                                           |
+
+**Visual Insights:** Century Group has steadily expanded its presence since 1987, with significant milestones including the CIAS IPO in 2008 and expansion into the offshore wind farm market from 2013 onward.
+
+**Table 6: Century Group's Sites and Expansion Plans**
+
+| Site              | Product/Process                                                                | Area (hectares) | Expansion Progress                                                                                                                                |
+|-------------------|---------------------------------------------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| CWP Taipei Port Plant    | Transition piece fabrication, Fabrication & assembly, Jacket shipment & loading                   | 80              | 1. 2nd/3rd tower of the Century Triple Towers by NOV 2024/end-2Q25, 2. Yard 5 by 2Q25, 3. Yard 6 under planning                                  |
+| CIAS E17, Taipei Port Plant   | Transition piece plate milling, Jacket plate milling, Pin pile plate milling      | 1               | N/A                                                                                                                               |
+| CIAS Guanyin, Taoyuan Plant  | Pin pile section fabrication, Pin pile leg fabrication, Secondary parts, J-tube, intermediate platform, ladder, etc. | 30              | N/A                                                                                                                               |
+| CHWE Taichung Port Plant| Pin pile fabrication & assembly, Upper leg fabrication, X-brace fabrication, WTG Tower fabrication            | 30              | 1Q24: Small pipes fabrication, 2Q24: Painting/Assembly plants construction, 3Q24: Assembly equipment installation, 1Q25: Painting equipment installation, 2Q25: Site completed  |
+| CIAS Yunlin Plant     | Lower leg fabrication, Pin pile section fabrication, Secondary parts, J-tube, intermediate platform, ladder, etc.          | 10              | N/A                                                                                                                               |
+
+**Visual Insights:** Different sites are specializing in different fabrication processes for various parts. The CHWE Taichung Port Plant has a detailed expansion plan with milestones from 1Q24 to 2Q25.
+
+**Financial Forecasts for CIAS:**
+
+*   **2024F:**
+    *   Sales (actual): NT$12.48bn (-14.06% YoY)
+    *   GM: 31.14%
+    *   OPM: 27.30%
+    *   Net profit: NT$1.97bn (+88.38% YoY)
+    *   EPS: NT$7.82
+
+**Visual Insights:**  2024 sales are forecasted to decrease by 14.06% YoY, while net profit is projected to increase significantly by 88.38% YoY.
+...
+    content: Here's a summary of the provided financial report excerpt in Markdown format:
+
+**Summary**
+
+This page provides an overview of Century Group, focusing on key milestones, site expansion plans, and financial forecasts for CIAS. The milestones table highlights significant events from 1987 to 2024. The sites and expansion plans table details the company's various locations, their activities, area size, and expansion progress. Financial forecasts for CIAS in 2024 show a year-over-year decrease in sales, but a large increase in net profit.
+
+**Table 5: Century Group's Milestones**
+
+| Year | Group Member         | Project/Event                                                                               |
+|------|----------------------|-------------------------------------------------------------------------------------------|
+| 1987 | Establishment of CIAS | N/A                                                                                           |
+| 1994 | N/A                   | Taiwan's 1st semiconductor foundry                                                             |
+| 1998 | N/A                   | New Taipei City Building (largest public engineering project of steel structure then)         |
+| 2003 | N/A                   | Nangang Station                                                                             |
+| 2008 | IPO of CIAS           | IPO of CIAS on TAIEX                                                                          |
+| 2013 | N/A                   | Tapping into offshore wind farm market                                                       |
+| 2015 | Myanmar Century Steel Structure        | Taiwan's 1st met mast for offshore wind farms                                                        |
+| 2017 | Establishment of CWP  | N/A                                                                                           |
+| 2020 | Establishment of CHWE | IPO of CWP on TPEx Emerging Stock Board (ESB)                                               |
+| 2024 | N/A                   | IPO of CHWE on ESB                                                                           |
+
+**Visual Insights:** Century Group has steadily expanded its presence since 1987, with significant milestones including the CIAS IPO in 2008 and expansion into the offshore wind farm market from 2013 onward.
+
+**Table 6: Century Group's Sites and Expansion Plans**
+
+| Site              | Product/Process                                                                | Area (hectares) | Expansion Progress                                                                                                                                |
+|-------------------|---------------------------------------------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| CWP Taipei Port Plant    | Transition piece fabrication, Fabrication & assembly, Jacket shipment & loading                   | 80              | 1. 2nd/3rd tower of the Century Triple Towers by NOV 2024/end-2Q25, 2. Yard 5 by 2Q25, 3. Yard 6 under planning                                  |
+| CIAS E17, Taipei Port Plant   | Transition piece plate milling, Jacket plate milling, Pin pile plate milling      | 1               | N/A                                                                                                                               |
+| CIAS Guanyin, Taoyuan Plant  | Pin pile section fabrication, Pin pile leg fabrication, Secondary parts, J-tube, intermediate platform, ladder, etc. | 30              | N/A                                                                                                                               |
+| CHWE Taichung Port Plant| Pin pile fabrication & assembly, Upper leg fabrication, X-brace fabrication, WTG Tower fabrication            | 30              | 1Q24: Small pipes fabrication, 2Q...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 14 (page_number=14)
+============================================================
+  Page chunk_id=f9f88500-c873-467a-acf1-4944620a478c
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 14, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format.
+
+## Key Financial Highlights
+
+*   Sales: NT$20.24bn (+62.26% YoY)
+*   Gross Margin: 33.50%
+*   Operating Profit Margin: 30.08%
+*   Net Profit: NT$3.27bn (+65.95% YoY)
+*   Earnings Per Share (EPS): NT$12.74
+
+## Table 7: CIS's 5-Year Income Statement
+
+| Metric (NT$mn)      | 2021  | 2022  | 2023  | 2024F | 2025F |
+| --------------------- | ----- | ----- | ----- | ----- | ----- |
+| Sales                 | 9,935 | 9,222 | 14,516| 12,475| 20,241|
+| % Change              |       | -7.18 | 57.40 | -14.06| 62.26|
+| Gross Profit          | 2,140 | 1,072 | 2,468 | 3,885 | 6,781 |
+| Gross Margin (%)      | 21.54 | 11.62 | 17.00 | 31.14 | 33.50 |
+| Operating Profit      | 1,749 | 577   | 1,956 | 3,406 | 6,089 |
+| Operating Margin (%)  | 17.60 | 6.26  | 13.48 | 27.30 | 30.08 |
+| Pre-tax Profit        | 1,911 | 166   | 1,681 | 3,269 | 5,859 |
+| Net Profit            | 1,260 | 369   | 1,047 | 1,972 | 3,272 |
+| % Change              | 12.68 | 4.01  | 7.21  | 15.81 | 16.16 |
+| Share Capital         | 2,307 | 2,324 | 2,345 | 2,523 | 2,569 |
+| EPS (NT$)             | 5.46  | 1.59  | 4.46  | 7.82  | 12.74 |
+| **Source**            | \multicolumn{6}{|l|}{CMoney; SinoPac forecasts}               |
+
+**Key Visual Insights:**
+
+*   Sales decreased in 2022 but saw a significant increase in 2023 and are projected to increase in 2025.
+*   Gross profit and operating profit follow a similar trend to sales.
+*   Operating Margin % increased to 30.08% in 2025F.
+
+## Table 8: CWP's Milestones
+
+| Year | Milestone                                                                         |
+| ---- | --------------------------------------------------------------------------------- |
+| 2017 | Establishment of the company                                                      |
+| 2020 | Kickoff of foundation/PP projects for CIP's Changfang and Xidao wind farms          |
+| 2021 | Entry into a foundation fabrication agreement with Foxwell Energy                  |
+| 2022 | Entry into a foundation fabrication agreement with Hai Long                        |
+| 2023 | Delivery of 62 jackets for CIP's Changfang and Xidao wind farms                     |
+| 2024 | Entry into a foundation fabrication agreement for Fengmiao wind farm                |
+| **Source**| Company; SinoPac
+
+## Company Profile & Capacity Plan Summary
+
+Century Wind Power (CWP) was founded in 2017 and produces jacket foundations for offshore wind turbines. CWP is expanding its capacity by building the Century Triple Towers and expects to produce 7-8 jackets a month when the expansion is completed in 2Q25.
+    content: Here's a summary of the provided financial report page in Markdown format.
+
+## Key Financial Highlights
+
+*   Sales: NT$20.24bn (+62.26% YoY)
+*   Gross Margin: 33.50%
+*   Operating Profit Margin: 30.08%
+*   Net Profit: NT$3.27bn (+65.95% YoY)
+*   Earnings Per Share (EPS): NT$12.74
+
+## Table 7: CIS's 5-Year Income Statement
+
+| Metric (NT$mn)      | 2021  | 2022  | 2023  | 2024F | 2025F |
+| --------------------- | ----- | ----- | ----- | ----- | ----- |
+| Sales                 | 9,935 | 9,222 | 14,516| 12,475| 20,241|
+| % Change              |       | -7.18 | 57.40 | -14.06| 62.26|
+| Gross Profit          | 2,140 | 1,072 | 2,468 | 3,885 | 6,781 |
+| Gross Margin (%)      | 21.54 | 11.62 | 17.00 | 31.14 | 33.50 |
+| Operating Profit      | 1,749 | 577   | 1,956 | 3,406 | 6,089 |
+| Operating Margin (%)  | 17.60 | 6.26  | 13.48 | 27.30 | 30.08 |
+| Pre-tax Profit        | 1,911 | 166   | 1,681 | 3,269 | 5,859 |
+| Net Profit            | 1,260 | 369   | 1,047 | 1,972 | 3,272 |
+| % Change              | 12.68 | 4.01  | 7.21  | 15.81 | 16.16 |
+| Share Capital         | 2,307 | 2,324 | 2,345 | 2,523 | 2,569 |
+| EPS (NT$)             | 5.46  | 1.59  | 4.46  | 7.82  | 12.74 |
+| **Source**            | \multicolumn{6}{|l|}{CMoney; SinoPac forecasts}               |
+
+**Key Visual Insights:**
+
+*   Sales decreased in 2022 but saw a significant increase in 2023 and are projected to increase in 2025.
+*   Gross profit and operating profit follow a similar trend to sales.
+*   Operating Margin % increased to 30.08% in 2025F.
+
+## Table 8: CWP's Milestones
+
+| Year | Milestone                                                                         |
+| ---- | --------------------------------------------------------------------------------- |
+| 2017 | Establishment of the company                                                      |
+| 2020 | Kickoff of foundation/PP projects for CIP's Changfang and Xidao wind farms          |
+| 2021 | Entry into a foundation fabrication agreement with Foxwell Energy                  |
+| 2022 | Entry into a foundation fabrication agreement with Hai Long                        |
+| 2023 | Delivery of 62 jackets for CIP's Changfang and Xidao wind farms                     |
+| 2024 | Entry into a foundation fabrication agreement for Fengmiao wind farm                |
+| **Source**| Company; SinoPac
+
+## Company Profile & Capacity Plan Summary
+
+Century Wind Power (CWP) was founded in 2017 and produces jacket foundations for offshore wind turbines. CWP is expanding its capacity by building the Century Triple Towers and expects to produce 7-8 jackets a month when the expansion is completed in 2Q25.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 15 (page_number=15)
+============================================================
+  Page chunk_id=e12a8a95-8375-4297-b383-e3a8a93b24c8
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 15, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided page, including key data points and visual insights in Markdown format:
+
+### Summary of Page Content
+
+This page of the financial report provides information on CWP's site in Taipei Port and Century Triple Towers. It discusses the specifications of the Triple Towers, specifically comparing the 1st and 2nd Stations. The page also highlights a robust long-term uptrend driven by higher wind turbine wattage and the transition to larger, more powerful wind turbines, implying increased demand for heavier tonnage jackets.
+
+### Table: Century Triple Towers Specifications
+
+| Attribute           | 1st Station | 2nd Station |
+|--------------------|-------------|-------------|
+| Tower Height (m)   | 118 m       | 138 m       |
+| Station Width (m)  | 60 m        | 60 m        |
+| Hook Height (m)    | 110 m       | 130 m       |
+| Crane Capacity (T) | 1,600 T     | 1,600 T     |
+| Turn Over Rate (Days/JK) | 7 Days/JK  | 7 Days/JK  |
+| Ready for Use      | 2024/11     | 2025/03-06  |
+
+**Visual Insights:**
+
+*   The CWP site in Taipei Port features designated areas, including storage and yards.
+*   The 2nd Station has a larger tower height and hook height compared to the 1st Station.
+*   The Ready for Use data suggests the second station will be in service roughly four months after the first station.
+*   The trend towards larger turbines (21.5MW vs 14.5MW) necessitates higher tonnage jackets, benefiting Century Group.
+    content: Here's a summary of the provided page, including key data points and visual insights in Markdown format:
+
+### Summary of Page Content
+
+This page of the financial report provides information on CWP's site in Taipei Port and Century Triple Towers. It discusses the specifications of the Triple Towers, specifically comparing the 1st and 2nd Stations. The page also highlights a robust long-term uptrend driven by higher wind turbine wattage and the transition to larger, more powerful wind turbines, implying increased demand for heavier tonnage jackets.
+
+### Table: Century Triple Towers Specifications
+
+| Attribute           | 1st Station | 2nd Station |
+|--------------------|-------------|-------------|
+| Tower Height (m)   | 118 m       | 138 m       |
+| Station Width (m)  | 60 m        | 60 m        |
+| Hook Height (m)    | 110 m       | 130 m       |
+| Crane Capacity (T) | 1,600 T     | 1,600 T     |
+| Turn Over Rate (Days/JK) | 7 Days/JK  | 7 Days/JK  |
+| Ready for Use      | 2024/11     | 2025/03-06  |
+
+**Visual Insights:**
+
+*   The CWP site in Taipei Port features designated areas, including storage and yards.
+*   The 2nd Station has a larger tower height and hook height compared to the 1st Station.
+*   The Ready for Use data suggests the second station will be in service roughly four months after the first station.
+*   The trend towards larger turbines (21.5MW vs 14.5MW) necessitates higher tonnage jackets, benefiting Century Group.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 16 (page_number=16)
+============================================================
+  Page chunk_id=ad9eb557-dbf1-4aec-a3cf-f67c37e5dcf9
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 16, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page in Markdown format:
+
+**Company Overview:**
+
+Century Huaxin Wind Energy (CHWE), established in 2020, manufactures pin piles, small pipes, and wind turbine towers in Taichung Port West Pier, Taiwan.
+
+**Table 9: CWP's 5-year Income Statement**
+
+| Metric (NT$mn)      | 2021  | 2022   | 2023   | 2024F  | 2025F   |
+| --------------------- | ----- | ------ | ------ | ------ | ------- |
+| Sales                 | 4,813 | 2,894  | 8,213  | 9,664  | 12,768  |
+| % change             | 169.40 | -39.87 | 183.81 | 17.67  | 32.11   |
+| Gross profit          | 1,154 | -493  | 1,420  | 2,613  | 4,522   |
+| Gross margin (%)      | 23.99 | -17.05 | 17.29  | 27.04  | 35.42   |
+| Operating profit      | 967   | -682  | 1,155  | 2,374  | 4,017   |
+| Operating margin (%)  | 20.08 | -23.58 | 14.06  | 24.56  | 31.46   |
+| Pre-tax profit        | 1,001 | -701  | 1,021  | 2,287  | 3,901   |
+| Net profit            | 804   | -561  | 822   | 1,819  | 3,096   |
+| % change             | 16.71 | -19.39 | 10.01  | 18.82  | 24.25   |
+| Share capital         | 1,000 | 1,200  | 1,200  | 1,700  | 1,700   |
+| EPS (NT$)             | 8.04  | -4.68 | 6.85   | 10.70  | 18.21   |
+| **Source:** | CMoney; SinoPac forecasts |   |   |   |   |
+
+**Visual Insights (Based on Table 9):**
+
+*   **Sales:** Sales experienced a significant increase in 2023 after a decrease in 2022. Sales are projected to continue growing in 2024 and 2025.
+*   **Gross Profit/Margin:** After negative numbers in 2022, the company has recovered in 2023 and is projected to have continued growth of gross profit and margin.
+*   **Operating Profit/Margin:** Similar to gross profit, operating profit is also expected to grow considerably.
+*   **EPS:** EPS is expected to increase significantly in 2024 and 2025 after a decline in 2022.
+
+**Table 10: CHWE Milestones**
+
+| Time      | Milestone                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------- |
+| FEB 2020  | Establishment                                                                                 |
+| SEP 2022  | Signed capacity reservation agreement for Formosa 3 and Fengmiao wind farm                     |
+| OCT 2022  | Taipower wind farm Phase 2 kicked off                                                           |
+| JAN 2023  | Small pipe projects for Taipower Phase 2 wind farm and Hai Long wind farm kicked off           |
+| NOV 2023  | 124 pin piles for Taipower Phase 2 completed                                                  |
+| JUN 2024  | Signed contract of 99 pin piles for CIP's Fengmiao wind farm                                   |
+| JUL 2024  | Shipment of pin piles for Taipower Phase 2; Initiation of tower supplier certification process |
+| DEC 2024  | Pin pile project for Fengmiao wind farm kicked off                                            |
+| **Source:** | CHWE; SinoPac |
+
+**Additional Information:**
+
+*   **Annual Capacity:** Pin piles (300 units), small pipes (4,000 units), towers (50 units).
+*   **Manufacturing Facilities:**
+    *   Yard I: Pin pile and tower manufacturing.
+    *   Yard II A: Assembly and finishing yard.
+    *   Yard II B: Painting yard.
+    *   Yard II C: Small pipe manufacturing.
+
+**Certifications:** ISO 45001 and ISO 140001.
+    content: Here's a summary of the provided financial report page in Markdown format:
+
+**Company Overview:**
+
+Century Huaxin Wind Energy (CHWE), established in 2020, manufactures pin piles, small pipes, and wind turbine towers in Taichung Port West Pier, Taiwan.
+
+**Table 9: CWP's 5-year Income Statement**
+
+| Metric (NT$mn)      | 2021  | 2022   | 2023   | 2024F  | 2025F   |
+| --------------------- | ----- | ------ | ------ | ------ | ------- |
+| Sales                 | 4,813 | 2,894  | 8,213  | 9,664  | 12,768  |
+| % change             | 169.40 | -39.87 | 183.81 | 17.67  | 32.11   |
+| Gross profit          | 1,154 | -493  | 1,420  | 2,613  | 4,522   |
+| Gross margin (%)      | 23.99 | -17.05 | 17.29  | 27.04  | 35.42   |
+| Operating profit      | 967   | -682  | 1,155  | 2,374  | 4,017   |
+| Operating margin (%)  | 20.08 | -23.58 | 14.06  | 24.56  | 31.46   |
+| Pre-tax profit        | 1,001 | -701  | 1,021  | 2,287  | 3,901   |
+| Net profit            | 804   | -561  | 822   | 1,819  | 3,096   |
+| % change             | 16.71 | -19.39 | 10.01  | 18.82  | 24.25   |
+| Share capital         | 1,000 | 1,200  | 1,200  | 1,700  | 1,700   |
+| EPS (NT$)             | 8.04  | -4.68 | 6.85   | 10.70  | 18.21   |
+| **Source:** | CMoney; SinoPac forecasts |   |   |   |   |
+
+**Visual Insights (Based on Table 9):**
+
+*   **Sales:** Sales experienced a significant increase in 2023 after a decrease in 2022. Sales are projected to continue growing in 2024 and 2025.
+*   **Gross Profit/Margin:** After negative numbers in 2022, the company has recovered in 2023 and is projected to have continued growth of gross profit and margin.
+*   **Operating Profit/Margin:** Similar to gross profit, operating profit is also expected to grow considerably.
+*   **EPS:** EPS is expected to increase significantly in 2024 and 2025 after a decline in 2022.
+
+**Table 10: CHWE Milestones**
+
+| Time      | Milestone                                                                                     |
+| --------- | --------------------------------------------------------------------------------------------- |
+| FEB 2020  | Establishment                                                                                 |
+| SEP 2022  | Signed capacity reservation agreement for Formosa 3 and Fengmiao wind farm                     |
+| OCT 2022  | Taipower wind farm Phase 2 kicked off                                                           |
+| JAN 2023  | Small pipe projects for Taipower Phase 2 wind farm and Hai Long wind farm kicked off           |
+| NOV 2023  | 124 pin piles for Taipower Phase 2 completed                                                  |
+| JUN 2024  | Signed contract of 99 pin piles for CIP's Fengmiao wind farm                                   |
+| JUL 2024  | Shipment of pin piles for Taipower Phase 2; Initiation of tower supplier certification process |
+| DEC 2024  | Pin pile project for Fengmiao wind farm kicked off                                            |
+| **Source:** | CHWE; SinoPac |
+
+**Additional Information:**
+
+*   **Annual Capacity:** Pin piles (300 units), small pipes (4,000 units), towers (50 units).
+*   **Manufacturing Facilities:**
+    *   Yard I: Pin pile and tower manufacturing.
+    *   Yard II A: Assembly and finishing yard.
+    *   Yard II B: Painting yard.
+    *   Yard II C: Small pipe manufacturing.
+
+**Certifications:** ISO 45001 and ISO 140001.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 17 (page_number=17)
+============================================================
+  Page chunk_id=abc36a45-8e5f-4783-8005-26b385c3b1fb
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 17, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page, extracted into Markdown tables with key insights:
+
+**Summary**
+
+This page of the financial report focuses on CHWE's wind turbine tower-related activities and project updates. CHWE aims for wind turbine tower certification this year and has technical cooperation with Welcon. Project updates include the jacket and pin pile progress for several wind farm projects. Overall, projects are estimated to contribute NT$4-6 billion to 2025 sales.
+
+**Table: Taichung Port Facilities**
+
+| Location        | Description             |
+|----------------|-------------------------|
+| Yard I          | Pin Pile/Tower       |
+| Yard II A       | Assembly/Finish    |
+| Yard II B       | Painting        |
+| Yard II C       | Small Pipe      |
+| Storage Area | -               |
+
+**Table: Project Updates**
+
+| Category | Project                                                                   | Status/Timeline                                                                                                |
+|----------|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| Jacket   | Round 2 Wind Farms (Taipower Phase 2, Hai Long Wind Farm)                 | 26 substructures for Taipower Phase 2 completed by end of 2024. 4 substructures for Hai Long completed by end of 2024. Plan to complete a total of 21 jackets for Hai Long project by 2Q25                                                              |
+|          | Phase 1, Round 3 Wind Farms (Fengmiao)                                    | Manufacturing to commence in 2025. Preparatory work underway. Ha Long substructure assembly will be finished first. |
+|          | Formosa 4 and Wei Lan Hai Changhua Projects                                  | Material production to begin in 3Q25 and 4Q25, respectively.                                                    |
+| Pin Pile  | Taipower Phase 2                                                           | Manufacturing completed. Shipment in progress.                                                                |
+|          | Fengmiao (3-1), Formosa 4 and Wei Lan Hai Changhua                           | Material production for Fengmiao has begun. Initiating production for Formosa 4 and Wei Lan Hai Changhua in 3Q25 and 4Q25.                                                            |
+
+**Visual Insights (based on the image and OCR)**
+
+*   CHWE aims to pass wind turbine certification by the end of 2025.
+*   CHWE is focused on completing jacket substructures for wind farm projects, specifically Taipower Phase 2 and Hai Long wind farm.
+*   Production of pin piles and materials for several projects is scheduled for 3Q25 and 4Q25.
+*   Overall projects are estimated to contribute NT$4-6bn to 2025 sales.
+    content: Here's a summary of the financial report page, extracted into Markdown tables with key insights:
+
+**Summary**
+
+This page of the financial report focuses on CHWE's wind turbine tower-related activities and project updates. CHWE aims for wind turbine tower certification this year and has technical cooperation with Welcon. Project updates include the jacket and pin pile progress for several wind farm projects. Overall, projects are estimated to contribute NT$4-6 billion to 2025 sales.
+
+**Table: Taichung Port Facilities**
+
+| Location        | Description             |
+|----------------|-------------------------|
+| Yard I          | Pin Pile/Tower       |
+| Yard II A       | Assembly/Finish    |
+| Yard II B       | Painting        |
+| Yard II C       | Small Pipe      |
+| Storage Area | -               |
+
+**Table: Project Updates**
+
+| Category | Project                                                                   | Status/Timeline                                                                                                |
+|----------|-----------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| Jacket   | Round 2 Wind Farms (Taipower Phase 2, Hai Long Wind Farm)                 | 26 substructures for Taipower Phase 2 completed by end of 2024. 4 substructures for Hai Long completed by end of 2024. Plan to complete a total of 21 jackets for Hai Long project by 2Q25                                                              |
+|          | Phase 1, Round 3 Wind Farms (Fengmiao)                                    | Manufacturing to commence in 2025. Preparatory work underway. Ha Long substructure assembly will be finished first. |
+|          | Formosa 4 and Wei Lan Hai Changhua Projects                                  | Material production to begin in 3Q25 and 4Q25, respectively.                                                    |
+| Pin Pile  | Taipower Phase 2                                                           | Manufacturing completed. Shipment in progress.                                                                |
+|          | Fengmiao (3-1), Formosa 4 and Wei Lan Hai Changhua                           | Material production for Fengmiao has begun. Initiating production for Formosa 4 and Wei Lan Hai Changhua in 3Q25 and 4Q25.                                                            |
+
+**Visual Insights (based on the image and OCR)**
+
+*   CHWE aims to pass wind turbine certification by the end of 2025.
+*   CHWE is focused on completing jacket substructures for wind farm projects, specifically Taipower Phase 2 and Hai Long wind farm.
+*   Production of pin piles and materials for several projects is scheduled for 3Q25 and 4Q25.
+*   Overall projects are estimated to contribute NT$4-6bn to 2025 sales.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 18 (page_number=18)
+============================================================
+  Page chunk_id=041f242d-0aaa-486b-9034-2df5b91a4881
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 18, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page, focusing on Table 11 regarding jacket potential orders and estimated schedules.
+
+**Summary**
+
+Table 11 provides an overview of potential jacket orders across various wind farms, detailing the number of jackets (JK) involved and the estimated schedule for each project. The schedule includes stages like substructure assembly, materials production, and overall completion, spanning from 2024 to 2028. Projects are categorized by round/phase, providing a structured outlook on the development timeline. It appears Round 2 projects are beginning the earliest, but by 2028, the completion for Round 3-2 projects is targeted for completion.
+
+**Table: Jacket Potential Orders and Estimated Schedule**
+
+| Round/Phase | Wind Farm          | Number of JK | 2024                                  | 2025                                      | 2026                                        | 2027                                        | 2028                                    |
+| :----------- | :----------------- | :----------- | :------------------------------------ | :---------------------------------------- | :------------------------------------------ | :------------------------------------------ | :-------------------------------------- |
+| 2            | Hai Long           | 21           | Substructure assembly began in NOV 2024 | Completion targeted for 2Q25               |                                             |                                             |                                         |
+| 3-1          | Fengmiao 3-1       | 20           | Materials production began in DEC 2024  | Substructure assembly to begin in 2H25    | Completion targeted for 1Q26               |                                             |                                         |
+| 3-1          | Formosa 4          | 35           |                                       | Materials production to begin in 3Q25    | Substructure assembly to begin in 1Q26   | Completion targeted for 2Q27               |                                         |
+| 3-1          | Wei Lan Hai Changhua | 32           |                                       | Materials production to begin in 4Q25    | Substructure assembly to begin in 3Q26   | Completion targeted for 3Q27               |                                         |
+| 3-2          | Formosa 6          | 57           |                                       |                                           | Materials production to begin in 3Q26    | Substructure assembly to begin in 4Q26   | Completion targeted for 3Q28            |
+| 3-2          | Youde              | 50           |                                       |                                           | Materials production to begin in 4Q26    | Substructure assembly to begin in 3Q27   | Completion targeted for 4Q28            |
+| 3-2          | Fengmiao 3-2       | 42           |                                       |                                           |                                             | Materials production to begin in 1Q27    |                                         |
+| 3-2          | Haiding            | 68           |                                       |                                           |                                             | Materials production to begin in 2Q27    |                                         |
+| 3-2          | Deshuai            | 17           |                                       |                                           |                                             | Materials production to begin in 4Q27    |                                         |
+
+**Visual Insights (based on the table):**
+
+*   The Hai Long project (Round 2) is the most advanced, with substructure assembly beginning in November 2024 and completion targeted for Q2 2025.
+*   Phase 3-1 projects (Fengmiao, Formosa 4, Wei Lan) are scheduled to start materials production in 2024 and Q3/Q4 2025, with completion targeted in 2026-2027.
+*   Phase 3-2 projects (Formosa 6, Youde, Fengmiao, Haiding, Deshuai) begin material production in 2026 and 2027 and completion slated between 2027 and 2028.
+*   The number of jackets varies significantly across wind farms, ranging from 17 for Deshuai to 68 for Haiding.
+*   Source of the data is Century Wind Power and SinoPac.
+    content: Here's a summary of the financial report page, focusing on Table 11 regarding jacket potential orders and estimated schedules.
+
+**Summary**
+
+Table 11 provides an overview of potential jacket orders across various wind farms, detailing the number of jackets (JK) involved and the estimated schedule for each project. The schedule includes stages like substructure assembly, materials production, and overall completion, spanning from 2024 to 2028. Projects are categorized by round/phase, providing a structured outlook on the development timeline. It appears Round 2 projects are beginning the earliest, but by 2028, the completion for Round 3-2 projects is targeted for completion.
+
+**Table: Jacket Potential Orders and Estimated Schedule**
+
+| Round/Phase | Wind Farm          | Number of JK | 2024                                  | 2025                                      | 2026                                        | 2027                                        | 2028                                    |
+| :----------- | :----------------- | :----------- | :------------------------------------ | :---------------------------------------- | :------------------------------------------ | :------------------------------------------ | :-------------------------------------- |
+| 2            | Hai Long           | 21           | Substructure assembly began in NOV 2024 | Completion targeted for 2Q25               |                                             |                                             |                                         |
+| 3-1          | Fengmiao 3-1       | 20           | Materials production began in DEC 2024  | Substructure assembly to begin in 2H25    | Completion targeted for 1Q26               |                                             |                                         |
+| 3-1          | Formosa 4          | 35           |                                       | Materials production to begin in 3Q25    | Substructure assembly to begin in 1Q26   | Completion targeted for 2Q27               |                                         |
+| 3-1          | Wei Lan Hai Changhua | 32           |                                       | Materials production to begin in 4Q25    | Substructure assembly to begin in 3Q26   | Completion targeted for 3Q27               |                                         |
+| 3-2          | Formosa 6          | 57           |                                       |                                           | Materials production to begin in 3Q26    | Substructure assembly to begin in 4Q26   | Completion targeted for 3Q28            |
+| 3-2          | Youde              | 50           |                                       |                                           | Materials production to begin in 4Q26    | Substructure assembly to begin in 3Q27   | Completion targeted for 4Q28            |
+| 3-2          | Fengmiao 3-2       | 42           |                                       |                                           |                                             | Materials production to begin in 1Q27    |                                         |
+| 3-2          | Haiding            | 68           |                                       |                                           |                                             | Materials production to begin in 2Q27    |                                         |
+| 3-2          | Deshuai            | 17           |                                       |                                           |                                             | Materials production to begin in 4Q27    |                                         |
+
+**Visual Insights (based on the table):**
+
+*   The Hai Long project (Round 2) is the most advanced, with substructure assembly beginning in November 2024 and completion targeted for Q2 2025.
+*   Phase 3-1 projects (Fengmiao, Formosa 4, Wei Lan) are scheduled to start materials production in 2024 and ...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 19 (page_number=19)
+============================================================
+  Page chunk_id=bf2fa6f7-9591-4c51-be53-eb410a6364b9
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 19, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the financial report page you provided, presented in Markdown format.
+
+**Summary**
+
+This page presents two tables: Table 12 detailing pin pile order estimates and schedules for various wind farms, and Table 13 presenting the CHWE income statement for 2022, 2023, and forecasts for 2024 and 2025. Table 12 shows the schedule of material production for different wind farms, including Formosa, Youde, Haiding, etc. Table 13 shows that there is a massive expected revenue growth in 2025, along with improvement in gross profit, and operating profit.
+
+**Table 12: Pin Pile Potential Orders and Estimated Schedule**
+
+| Header         | Description                                               |
+|----------------|-----------------------------------------------------------|
+| Round/phase    | Phase of the project.                                   |
+| Wind farm      | Name of the wind farm.                                    |
+| Number of PP   | Number of pin piles required.                            |
+| 2024           | Target date for materials production to begin or completion. |
+| 2025           | Target date for materials production to begin or completion. |
+| 2026           | Target date for materials production to begin or completion. |
+| 2027           | Target date for materials production to begin or completion. |
+| 2028           | Target date for materials production to begin or completion. |
+
+**Key Data Points and Trends (Table 12):**
+
+*   Several wind farms are targeted to begin materials production in December 2024 (e.g., Fengmiao 3-1) or 2025(e.g., Formosa 4)
+*   Some projects have completion targets in 2027/2028 (e.g., Formosa 6, Wei Lan Hai Changhua).
+
+**Table 13: CHWE Income Statement**
+
+| Header          | Description                                   |
+|-----------------|-----------------------------------------------|
+| NT$mn           | Values are in millions of New Taiwan Dollars.   |
+| Sales           | Total sales revenue.                          |
+| % YoY           | Year-over-year percentage change.               |
+| Gross Profit    | Revenue minus cost of goods sold.             |
+| GM (%)          | Gross margin percentage.                     |
+| Op. Profit      | Operating profit.                             |
+| OPM (%)         | Operating profit margin percentage.            |
+| Pre-tax Profit  | Profit before taxes.                          |
+| Net Profit      | Profit after taxes.                           |
+| Net Margin (%)  | Net profit margin percentage.                |
+| Shares capital | Number of shares in capital                    |
+| EPS (N$)        | Earnings per share (in New Taiwan Dollars).     |
+
+**Key Data Points and Trends (Table 13):**
+
+*   **Sales:**  Sales are projected to increase dramatically from NT$126mn in 2022 to NT$5,973mn in 2025.
+*   **% YoY:** Revenue is expected to grow by 663.74% in 2025.
+*   **Profitability:**  Gross profit, operating profit, and net profit are all negative in 2022 but turn positive and increase significantly by 2025.
+*   **Margins:** Net margin is projected to improve from -80.24% in 2022 to 26.84% in 2025.
+*   **EPS:**  EPS is projected to increase from -0.71 in 2022 to 8.02 in 2025.
+    content: Here's a summary of the financial report page you provided, presented in Markdown format.
+
+**Summary**
+
+This page presents two tables: Table 12 detailing pin pile order estimates and schedules for various wind farms, and Table 13 presenting the CHWE income statement for 2022, 2023, and forecasts for 2024 and 2025. Table 12 shows the schedule of material production for different wind farms, including Formosa, Youde, Haiding, etc. Table 13 shows that there is a massive expected revenue growth in 2025, along with improvement in gross profit, and operating profit.
+
+**Table 12: Pin Pile Potential Orders and Estimated Schedule**
+
+| Header         | Description                                               |
+|----------------|-----------------------------------------------------------|
+| Round/phase    | Phase of the project.                                   |
+| Wind farm      | Name of the wind farm.                                    |
+| Number of PP   | Number of pin piles required.                            |
+| 2024           | Target date for materials production to begin or completion. |
+| 2025           | Target date for materials production to begin or completion. |
+| 2026           | Target date for materials production to begin or completion. |
+| 2027           | Target date for materials production to begin or completion. |
+| 2028           | Target date for materials production to begin or completion. |
+
+**Key Data Points and Trends (Table 12):**
+
+*   Several wind farms are targeted to begin materials production in December 2024 (e.g., Fengmiao 3-1) or 2025(e.g., Formosa 4)
+*   Some projects have completion targets in 2027/2028 (e.g., Formosa 6, Wei Lan Hai Changhua).
+
+**Table 13: CHWE Income Statement**
+
+| Header          | Description                                   |
+|-----------------|-----------------------------------------------|
+| NT$mn           | Values are in millions of New Taiwan Dollars.   |
+| Sales           | Total sales revenue.                          |
+| % YoY           | Year-over-year percentage change.               |
+| Gross Profit    | Revenue minus cost of goods sold.             |
+| GM (%)          | Gross margin percentage.                     |
+| Op. Profit      | Operating profit.                             |
+| OPM (%)         | Operating profit margin percentage.            |
+| Pre-tax Profit  | Profit before taxes.                          |
+| Net Profit      | Profit after taxes.                           |
+| Net Margin (%)  | Net profit margin percentage.                |
+| Shares capital | Number of shares in capital                    |
+| EPS (N$)        | Earnings per share (in New Taiwan Dollars).     |
+
+**Key Data Points and Trends (Table 13):**
+
+*   **Sales:**  Sales are projected to increase dramatically from NT$126mn in 2022 to NT$5,973mn in 2025.
+*   **% YoY:** Revenue is expected to grow by 663.74% in 2025.
+*   **Profitability:**  Gross profit, operating profit, and net profit are all negative in 2022 but turn positive and increase significantly by 2025.
+*   **Margins:** Net margin is projected to improve from -80.24% in 2022 to 26.84% in 2025.
+*   **EPS:**  EPS is projected to increase from -0.71 in 2022 to 8.02 in 2025.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 20 (page_number=20)
+============================================================
+  Page chunk_id=bb3f0672-013b-464d-a112-1e4173fdec4d
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 20, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided financial report page, focusing on the peer valuation table.
+
+**Summary**
+
+The report justifies the high valuation of Century Group companies, primarily based on their P/Es, which have historically ranged from 15x to 25x one-year forward P/E.  CIAS is highlighted as a leading pin pile producer in Taiwan, and the buoyant demand from wind farm construction is expected to drive persistent earnings growth. The analysts believe that the group's P/Es can reach the upper end of the 15-25x range. The table provides a peer valuation comparison including key metrics like share price, EPS (estimated for 2024 and 2025), P/E ratio (actual and estimated), and 52-week P/E range.
+
+**Table Summary: Peer Valuations**
+
+| Header                       | Description                                                        |
+|------------------------------|--------------------------------------------------------------------|
+| **Share Price (NT$)** | Current share price in New Taiwan Dollars.                          |
+| **EPS 2023**           | Earnings Per Share for 2023.                                       |
+| **EPS 2024F**          | Estimated Earnings Per Share for 2024.                             |
+| **EPS 2025F**          | Estimated Earnings Per Share for 2025.                             |
+| **P/E 2023**             | Price-to-Earnings ratio for 2023.                                  |
+| **P/E 2024F**            | Estimated Price-to-Earnings ratio for 2024.                        |
+| **P/E 2025F**            | Estimated Price-to-Earnings ratio for 2025.                        |
+| **52 week P/E range Low**    | Low end of the Price-to-Earnings range over the past 52 weeks.   |
+| **52 week P/E range High**   | High end of the Price-to-Earnings range over the past 52 weeks.  |
+
+**Key Data Points & Trends**
+
+| Company     | Share Price (NT$) | EPS 2023 | EPS 2024F | EPS 2025F | P/E 2023 | P/E 2024F | P/E 2025F | 52 Week P/E Range (Low) | 52 Week P/E Range (High) |
+|-------------|-------------------|----------|-----------|-----------|----------|-----------|-----------|-------------------------|--------------------------|
+| CIAS        | 162               | 4.46     | 7.82      | 12.74     | 36.3     | 20.7      | 12.7      | 11.3                    | 26.8                     |
+| CWP         | 282.5             | 6.67     | 10.70     | 18.21     | 42.4     | 26.4      | 15.5      | 10.0                    | 19.0                     |
+| CHWE        | 101               | 0.05     | 0.27      | 8.02      | 2020     | 374       | 13        | 12.7                    | 20.7                     |
+| Shinfox (6806 TT) | 116               | 2.94     | 3.32      | 5.54      | 39.5     | 34.9      | 20.9      | 20.3                    | 34.7                     |
+| Swancor (3708 TT) | 89.2              | 12.88    | 2.89      | 3.8       | 6.9      | 30.9      | 23.5      | 23.1                    | 42.9                     |
+
+**Visual Insights (Based on Table Data):**
+
+*   **EPS Growth:**  CIAS, CWP, CHWE, and Shinfox are all projected to experience significant EPS growth from 2023 to 2025. Swancor shows a decrease in EPS from 2023 to 2024 and 2025.
+*   **CHWE outlier** CHWE looks like an outlier company compared to the other companies listed based on P/E 2023 and the estimated EPS for 2024 and 2025.
+*   **P/E Ratios:** P/E ratios for most companies are expected to decrease from 2023 to 2025, indicating anticipated earnings growth.
+*   **Valuation Range:**  The 52-week P/E range provides a historical context for current valuations, indicating potential upside or downside based on market sentiment.
+*   **Source:** The data comes from Bloomberg (2025/1/7 close) and SinoPac estimates.
+    content: Here's a summary of the provided financial report page, focusing on the peer valuation table.
+
+**Summary**
+
+The report justifies the high valuation of Century Group companies, primarily based on their P/Es, which have historically ranged from 15x to 25x one-year forward P/E.  CIAS is highlighted as a leading pin pile producer in Taiwan, and the buoyant demand from wind farm construction is expected to drive persistent earnings growth. The analysts believe that the group's P/Es can reach the upper end of the 15-25x range. The table provides a peer valuation comparison including key metrics like share price, EPS (estimated for 2024 and 2025), P/E ratio (actual and estimated), and 52-week P/E range.
+
+**Table Summary: Peer Valuations**
+
+| Header                       | Description                                                        |
+|------------------------------|--------------------------------------------------------------------|
+| **Share Price (NT$)** | Current share price in New Taiwan Dollars.                          |
+| **EPS 2023**           | Earnings Per Share for 2023.                                       |
+| **EPS 2024F**          | Estimated Earnings Per Share for 2024.                             |
+| **EPS 2025F**          | Estimated Earnings Per Share for 2025.                             |
+| **P/E 2023**             | Price-to-Earnings ratio for 2023.                                  |
+| **P/E 2024F**            | Estimated Price-to-Earnings ratio for 2024.                        |
+| **P/E 2025F**            | Estimated Price-to-Earnings ratio for 2025.                        |
+| **52 week P/E range Low**    | Low end of the Price-to-Earnings range over the past 52 weeks.   |
+| **52 week P/E range High**   | High end of the Price-to-Earnings range over the past 52 weeks.  |
+
+**Key Data Points & Trends**
+
+| Company     | Share Price (NT$) | EPS 2023 | EPS 2024F | EPS 2025F | P/E 2023 | P/E 2024F | P/E 2025F | 52 Week P/E Range (Low) | 52 Week P/E Range (High) |
+|-------------|-------------------|----------|-----------|-----------|----------|-----------|-----------|-------------------------|--------------------------|
+| CIAS        | 162               | 4.46     | 7.82      | 12.74     | 36.3     | 20.7      | 12.7      | 11.3                    | 26.8                     |
+| CWP         | 282.5             | 6.67     | 10.70     | 18.21     | 42.4     | 26.4      | 15.5      | 10.0                    | 19.0                     |
+| CHWE        | 101               | 0.05     | 0.27      | 8.02      | 2020     | 374       | 13        | 12.7                    | 20.7                     |
+| Shinfox (6806 TT) | 116               | 2.94     | 3.32      | 5.54      | 39.5     | 34.9      | 20.9      | 20.3                    | 34.7                     |
+| Swancor (3708 TT) | 89.2              | 12.88    | 2.89      | 3.8       | 6.9      | 30.9      | 23.5      | 23.1                    | 42.9                     |
+
+**Visual Insights (Based on Table Data):**
+
+*   **EPS Growth:**  CIAS, CWP, CHWE, and Shinfox are all projected to experience significant EPS growth from 2023 to 2025. Swancor shows a decrease in EPS from 2023 to 2024 and 2025.
+*   **CHWE outlier** CHWE looks like an outlier company compared to the other companies listed based on P/E 2023 and the estimated EPS for 2024 and 2025.
+*   **P/E Ratios:** P/E ratios for most companies are expected to decrease from 2023 to 2025, indicating anticipated earnings growth.
+*   **Valuation Range:**  The 52-week P/E range provides a historical context for current valuations, indicating potential upside or downside based on market sentiment.
+*   **Source:** The data comes from Bloomberg (2025/1/7 close) and SinoPac estimates.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 21 (page_number=21)
+============================================================
+  Page chunk_id=04a095c3-d495-437b-a5f6-f37d255885db
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 21, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: This page of a financial report published by SinoPac Securities Investment Service provides the registration information, contact information, and the report date.
+
+**Key Information:**
+
+*   **Publisher:** SinoPac Securities Investment Service
+*   **Registration:** Registered with the Taiwan Financial Supervisory Commission as No. 024 in 2021
+*   **Contact Information:**
+    *   Address: 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei City 100, Taiwan, R.O.C.
+    *   Tel: (886 2) 2361-0868
+    *   Fax: (886 2) 2361-0828
+    *   Bloomberg Page: RESP SINO
+*   **Report Date:** January 7, 2025
+
+| Item          | Details                                                        |
+|---------------|----------------------------------------------------------------|
+| Publisher      | SinoPac Securities Investment Service                          |
+| Registration  | Taiwan Financial Supervisory Commission No. 024 in 2021          |
+| Address       | 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei City 100, Taiwan |
+| Phone         | (886 2) 2361-0868                                               |
+| Fax           | (886 2) 2361-0828                                               |
+| Bloomberg Page | RESP SINO                                                     |
+| Report Date   | January 7, 2025                                                  |
+
+There are no charts or tables on the page. No visual insights are applicable.
+    content: This page of a financial report published by SinoPac Securities Investment Service provides the registration information, contact information, and the report date.
+
+**Key Information:**
+
+*   **Publisher:** SinoPac Securities Investment Service
+*   **Registration:** Registered with the Taiwan Financial Supervisory Commission as No. 024 in 2021
+*   **Contact Information:**
+    *   Address: 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei City 100, Taiwan, R.O.C.
+    *   Tel: (886 2) 2361-0868
+    *   Fax: (886 2) 2361-0828
+    *   Bloomberg Page: RESP SINO
+*   **Report Date:** January 7, 2025
+
+| Item          | Details                                                        |
+|---------------|----------------------------------------------------------------|
+| Publisher      | SinoPac Securities Investment Service                          |
+| Registration  | Taiwan Financial Supervisory Commission No. 024 in 2021          |
+| Address       | 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei City 100, Taiwan |
+| Phone         | (886 2) 2361-0868                                               |
+| Fax           | (886 2) 2361-0828                                               |
+| Bloomberg Page | RESP SINO                                                     |
+| Report Date   | January 7, 2025                                                  |
+
+There are no charts or tables on the page. No visual insights are applicable.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 22 (page_number=22)
+============================================================
+  Page chunk_id=7070197d-5846-4ec5-a2cd-b3615c3dba7b
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 22, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Unfortunately, this page contains no charts or tables to analyze. It only shows the company logo, title, date, and page number. I am unable to provide any analysis of financial data.
+    content: Unfortunately, this page contains no charts or tables to analyze. It only shows the company logo, title, date, and page number. I am unable to provide any analysis of financial data.
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 23 (page_number=23)
+============================================================
+  Page chunk_id=8c3d7f0e-cea7-474d-a859-6cdc55d8ac3c
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 23, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided page from the financial report, formatted as requested:
+
+**Report Overview**
+
+This page provides contact information for SinoPac Securities Investment Services and details regarding research report standards and disclaimers. It outlines contact information for SinoPac locations in Taipei and Hong Kong, and the U.S. Partner, Auerbach Grayson & Company. It also describes the analyst certification process, stock rating system, and disclaimers for U.S. persons.
+
+**Data Summary**
+
+| Category                     | Data                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Research Production**      |                                                                                                          |
+| Company                      | SinoPac Securities Investment Services                                                                  |
+| Address                      | 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei 100, Taiwan, R.O.C.                                           |
+| Telephone                    | (886 2) 2361-0868                                                                                    |
+| **Taipei Contact**           |                                                                                                          |
+| Company                      | SinoPac Securities Corporation                                                                         |
+| Address                      | 17F, 2 Chung Ching S. Road, Sec 1, Taipei 100, Taiwan, R.O.C.                                            |
+| Telephone                    | (886 2) 2316-5591                                                                                    |
+| **Hong Kong Contact**        |                                                                                                          |
+| Company                      | SinoPac Securities (Asia) Ltd.                                                                         |
+| Address                      | 7th Floor, Lee Garden Three, 1 Sunning Road, Causeway Bay, Hong Kong                                     |
+| Telephone                    | (852) 2586-8288                                                                                    |
+| **US Partner**               |                                                                                                          |
+| Company                      | Auerbach Grayson & Company                                                                             |
+| Address                      | 20 West 55th Street, New York, NY 10019 USA                                                              |
+| Telephone                    | (1212) 557-4444                                                                                       |
+| **Stock Rating System**      |                                                                                                          |
+| Buy                          | Stock will outperform the broader market over the next 12 months.                                     |
+| Neutral                      | Stock will perform in line with the broader market over the next 12 months.                            |
+| Sell                         | Stock will underperform the market over the next 12 months.                                          |
+
+**Visual Insights**
+
+There are no charts or graphs present in this section of the financial report.  All information is text-based.
+
+**Disclaimers**
+
+The report emphasizes the objectivity and impartiality of analysts, highlights that the report is for reference only, and cautions readers to use their own judgement regarding possible investment risks. It also details analyst certifications and outlines the SinoPac research stock rating system. The report also includes specific disclaimers for U.S. persons, indicating that SinoPac is not a registered broker-dealer in the U.S. and that transactions should be conducted through Auerbach Grayson & Company for U.S. recipients.
+    content: Here's a summary of the provided page from the financial report, formatted as requested:
+
+**Report Overview**
+
+This page provides contact information for SinoPac Securities Investment Services and details regarding research report standards and disclaimers. It outlines contact information for SinoPac locations in Taipei and Hong Kong, and the U.S. Partner, Auerbach Grayson & Company. It also describes the analyst certification process, stock rating system, and disclaimers for U.S. persons.
+
+**Data Summary**
+
+| Category                     | Data                                                                                                     |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **Research Production**      |                                                                                                          |
+| Company                      | SinoPac Securities Investment Services                                                                  |
+| Address                      | 14F, No. 80, Sec. 1, Zhongxiao W. Rd., Taipei 100, Taiwan, R.O.C.                                           |
+| Telephone                    | (886 2) 2361-0868                                                                                    |
+| **Taipei Contact**           |                                                                                                          |
+| Company                      | SinoPac Securities Corporation                                                                         |
+| Address                      | 17F, 2 Chung Ching S. Road, Sec 1, Taipei 100, Taiwan, R.O.C.                                            |
+| Telephone                    | (886 2) 2316-5591                                                                                    |
+| **Hong Kong Contact**        |                                                                                                          |
+| Company                      | SinoPac Securities (Asia) Ltd.                                                                         |
+| Address                      | 7th Floor, Lee Garden Three, 1 Sunning Road, Causeway Bay, Hong Kong                                     |
+| Telephone                    | (852) 2586-8288                                                                                    |
+| **US Partner**               |                                                                                                          |
+| Company                      | Auerbach Grayson & Company                                                                             |
+| Address                      | 20 West 55th Street, New York, NY 10019 USA                                                              |
+| Telephone                    | (1212) 557-4444                                                                                       |
+| **Stock Rating System**      |                                                                                                          |
+| Buy                          | Stock will outperform the broader market over the next 12 months.                                     |
+| Neutral                      | Stock will perform in line with the broader market over the next 12 months.                            |
+| Sell                         | Stock will underperform the market over the next 12 months.                                          |
+
+**Visual Insights**
+
+There are no charts or graphs present in this section of the financial report.  All information is text-based.
+
+**Disclaimers**
+
+The report emphasizes the objectivity and impartiality of analysts, highlights that the report is for reference only, and cautions readers to use their own judgement regarding possible investment risks. It also details analyst certifications and outlines the SinoPac research stock rat...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+PAGE CHUNK 24 (page_number=24)
+============================================================
+  Page chunk_id=a2742b32-ad4e-43f1-b619-04f91cf14ab5
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/long_example.pdf', 'section_id': None, 'page_number': 24, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Okay, here is the Markdown summary of the provided page from the financial report, including tables based on the text provided:
+
+```markdown
+## Summary of SinoPac Financial Report - January 7, 2025
+
+This page of the report contains legal disclaimers, conflict of interest statements, and information about investment banking activities. It essentially covers compliance and risk mitigation aspects associated with the research being presented.
+
+**Key Takeaways:**
+
+*   Auerbach Grayson & Company (or affiliates) does not "beneficially own" 1% or more of the equity securities mentioned.
+*   Auerbach Grayson & Company or its affiliates has not managed public offerings or received compensation for investment banking services from the subject company in the past 12 months.
+*   The report is for limited distribution and is not guaranteed to be complete. SinoPac denies liability for inaccuracies, errors, or omissions.
+*   Investing in non-U.S. securities involves risk and may be subject to different regulations.
+*   Currency fluctuations can affect the value of investments denominated in currencies other than USD.
+*   Past performance is not indicative of future results.
+*   The report cannot be copied or distributed without SinoPac's consent.
+
+---
+
+### Table: Ownership and Material Conflicts of Interest
+
+| Data Point                                        | Detail                                                                                                                      |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Auerbach Grayson & Company Ownership              | Does not "beneficially own" 1% or more of the equity securities mentioned in the report.                                   |
+| Potential Interests                               | Officers, directors, or employees may have interests, long or short positions, and may make purchases or sales.            |
+| Awareness of Material Conflict of Interest         | Auerbach Grayson & Company is not aware of any material conflict of interest as of the date of this publication          |
+
+### Table: Compensation and Investment Banking Activities
+
+| Data Point                       | Detail                                                                                                                                   |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Public Offering Management       | Auerbach Grayson & Company or any affiliate has not managed or co-managed a public offering of securities in the past 12 months.        |
+| Compensation for Banking Services | Auerbach Grayson & Company has not received compensation for investment banking services from the subject company in the past 12 months. |
+| Future Compensation              | Auerbach Grayson & Company neither does it or any affiliate expect to receive, or intends to seek compensation for investment banking services from the subject company in the next 3 months.                                  |
+
+### Table: Additional Disclosures
+
+| Data Point                        | Detail                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Distribution                      | Distribution only under circumstances permitted by applicable law.                                                                     |
+| Report Specificity                 | Has no regard to the specific investment objectives, financial situation or particular needs of any recipient.                           |
+| Completeness                      | Not guaranteed to be a complete statement or summary.                                                                                     |
+| Liability                         | SinoPac and its personnel have no liability for errors, inaccuracies, or omissions.                                                          |
+| Information Barriers              | SinoPac may rely on "Chinese Walls".                                                                                                   |
+| Non-U.S. Securities               | Investing in non-U.S. securities presents risks; non-U.S. issuers may not be registered with the U.S. Securities and Exchange Commission. |
+| Currency Fluctuations             | Investments denominated in non-USD currencies are subject to exchange rate fluctuations.                                                    |
+| Past Performance                  | Not a guide to future performance.                                                           ...
+    content: Okay, here is the Markdown summary of the provided page from the financial report, including tables based on the text provided:
+
+```markdown
+## Summary of SinoPac Financial Report - January 7, 2025
+
+This page of the report contains legal disclaimers, conflict of interest statements, and information about investment banking activities. It essentially covers compliance and risk mitigation aspects associated with the research being presented.
+
+**Key Takeaways:**
+
+*   Auerbach Grayson & Company (or affiliates) does not "beneficially own" 1% or more of the equity securities mentioned.
+*   Auerbach Grayson & Company or its affiliates has not managed public offerings or received compensation for investment banking services from the subject company in the past 12 months.
+*   The report is for limited distribution and is not guaranteed to be complete. SinoPac denies liability for inaccuracies, errors, or omissions.
+*   Investing in non-U.S. securities involves risk and may be subject to different regulations.
+*   Currency fluctuations can affect the value of investments denominated in currencies other than USD.
+*   Past performance is not indicative of future results.
+*   The report cannot be copied or distributed without SinoPac's consent.
+
+---
+
+### Table: Ownership and Material Conflicts of Interest
+
+| Data Point                                        | Detail                                                                                                                      |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Auerbach Grayson & Company Ownership              | Does not "beneficially own" 1% or more of the equity securities mentioned in the report.                                   |
+| Potential Interests                               | Officers, directors, or employees may have interests, long or short positions, and may make purchases or sales.            |
+| Awareness of Material Conflict of Interest         | Auerbach Grayson & Company is not aware of any material conflict of interest as of the date of this publication          |
+
+### Table: Compensation and Investment Banking Activities
+
+| Data Point                       | Detail                                                                                                                                   |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Public Offering Management       | Auerbach Grayson & Company or any affiliate has not managed or co-managed a public offering of securities in the past 12 months.        |
+| Compensation for Banking Services | Auerbach Grayson & Company has not received compensation for investment banking services from the subject company in the past 12 months. |
+| Future Compensation              | Auerbach Grayson & Company neither does it or any affiliate expect to receive, or intends to seek compensation for investment banking services from the subject company in the next 3 months.                                  |
+
+### Table: Additional Disclosures
+
+| Data Point                        | Detail                                                                                                                                 |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Distribution                      | Distribution only under circumstances permitted by applicable law.                                                                     |
+| Report Specificity                 | Has no regard to the specific investment objectives, financial situation or particular needs of any recipient.                           |
+| Completeness         ...
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+TOTAL: 1 doc, 0 section, 24 page chunks
+============================================================

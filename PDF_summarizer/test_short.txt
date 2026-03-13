@@ -1,0 +1,123 @@
+Cleared database: removed 1 document(s).
+
+Database: postgresql+psycopg://davidfu@localhost:5432/finance_rag
+PDF file: /Users/davidfu/Desktop/Rays_Intern/test_pdfs/short_example.pdf
+Output file: /Users/davidfu/Desktop/Rays_Intern/PDF_summarizer/test_ingest.txt
+
+📄 Processing: short_example.pdf
+✅ Done: short_example.pdf
+   Pages: 1
+   Document ID: 9
+
+--- Pipeline Result ---
+{'status': 'success', 'filename': 'short_example.pdf', 'document_id': 9, 'total_pages': 1, 'file_size_bytes': 135141}
+
+============================================================
+DOCUMENT-LEVEL CHUNK (overall summary)
+============================================================
+  Document chunk_id=b02ec06f-4e5e-4300-9007-40003128e5dc
+    metadata: {'level': 'document', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/short_example.pdf', 'page_span': [1, 1], 'section_id': None, 'page_number': None, 'section_title': None, 'parent_chunk_id': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Here's a summary of the provided NIFTY Index sales note:
+
+*   **Company:** SinoPac Securities (Sales Department)
+*   **Report Type:** Sales Note - Chart Reading
+*   **Period:** January 7th, 2025 (Daily NIFTY Index analysis covering 13DEC2018-07JAN2025)
+*   **Key Topics:**
+    *   NIFTY Index is approaching a key support breakdown.
+    *   Failure to defend short-term supports has triggered a 250-day moving average (dma) breakdown (first time since March 2023).
+    *   This breakdown may confirm a Head & Shoulders pattern, indicating a potential trend reversal.
+    *   The 22500-22700 range is identified as the next support level to be tested.
+    *   Regaining the 24800 range is crucial to easing downside risk.
+    *   The 250 DMA seems to be around 22200.
+    content: Jun
+
+2022
+
+NIFTY Index (NSE Nifty 50 Index) NIFTY Index Daily 13DEC2018-07JAN2025
+
+[Jan 7th, 7:28am] Nifty Index
+
+## Jan 7 th , 2025 SinoPac Sales Notes - Chart Reading
+
+## Nifty Index approaching key support breakdown…
+
+- 26000
+
+- 24000
+
+-22000
+
+- 20000
+
+<!-- image -->
+
+~ After failing to defend a few key short-term supports, further decline will not just triggered its 250dma support breakdown for the first time since March 2023, but also marks an early confirmation of the Head &amp; Shoulders , or a trend reverse pattern used by chartists and making 22500-22700 range the next support to be tested. Such downside risk could be eased if the index can regain 24800 range asap, and then market will focus on next catalysts/sentiments.
+
+Timothy Law
+
+SinoPac Securities, Sales Director
+
+Email: timothy.law@sinopac.com
+
+This is not a product of SinoPac Research Department, and it is intended for use of the address(s) only.
+
+250dma--
+
+222???
+  parent: (none)
+  prev_sibling: (none)
+  next_sibling: (none)
+
+============================================================
+PAGE CHUNK 1 (page_number=1)
+============================================================
+  Page chunk_id=2af0315a-3fed-4c75-88f6-5f5ed832afca
+    metadata: {'level': 'page', 'file_path': '/Users/davidfu/Desktop/Rays_Intern/test_pdfs/short_example.pdf', 'section_id': None, 'page_number': 1, 'section_level': None, 'section_title': None, 'parent_chunk_id': None, 'section_page_span': None, 'next_page_in_section': None, 'prev_page_in_section': None, 'next_sibling_chunk_id': None, 'prev_sibling_chunk_id': None}
+    summary: Okay, here's a summary of the financial report page, formatted in Markdown:
+
+**Summary:**
+
+This document is a SinoPac Sales Note dated January 7th, 2025, providing a chart reading on the Nifty Index.  The analysis suggests the Nifty Index is approaching a key support breakdown, having failed to defend several short-term supports. The breakdown of the 250-day moving average (250dma) is highlighted as the first time since March 2023. The analysts are pointing towards a Head & Shoulders pattern or a trend reversal, and anticipates a test of the 22500-22700 range.  Regaining the 24800 range is seen as easing downside risk.
+
+**Chart/Table Extraction:**
+
+| Category         | Data/Description                                            | Notes/Visual Insights                                                                                                          |
+|------------------|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| **Title**       | Nifty Index approaching key support breakdown...           | Indicates a bearish outlook on the Nifty Index.                                                                     |
+| **Chart Type**    | Line Chart of Nifty Index                                   | Tracks the Nifty Index over time.                                                                                  |
+| **Time Period**   | Approximately June 2022 - January 2025                     |                                                                         |
+| **Legend**       | NIFTY Index (NSE Nifty 50 Index) NIFTY Index Daily 13DEC2018-07JAN2025 | Explains that the chart tracks the daily Nifty 50 Index from 13DEC2018-07JAN2025.                                 |
+| **Key Support Level** | Range 22500-22700 | The next potential support range to be tested.                                           |
+| **250dma** | Shown on Chart as an upward curve | Is identified to be broken down for the first time since March 2023                                                                                                           |
+| **Potential Head & Shoulders** | Annotated on Chart as three peaks     | Chartists are indicating a potential Head & Shoulders, or a trend reverse pattern                                                                                                           |
+| **Upside Risk Level** | 24800       | An upside risk that can be eased if this index is regained quickly.                                                                                                              |
+| **Analyst**   | Timothy Law, SinoPac Securities, Sales Director, timothy.law@sinopac.com                                   |                                                                         |
+    content: Okay, here's a summary of the financial report page, formatted in Markdown:
+
+**Summary:**
+
+This document is a SinoPac Sales Note dated January 7th, 2025, providing a chart reading on the Nifty Index.  The analysis suggests the Nifty Index is approaching a key support breakdown, having failed to defend several short-term supports. The breakdown of the 250-day moving average (250dma) is highlighted as the first time since March 2023. The analysts are pointing towards a Head & Shoulders pattern or a trend reversal, and anticipates a test of the 22500-22700 range.  Regaining the 24800 range is seen as easing downside risk.
+
+**Chart/Table Extraction:**
+
+| Category         | Data/Description                                            | Notes/Visual Insights                                                                                                          |
+|------------------|-------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| **Title**       | Nifty Index approaching key support breakdown...           | Indicates a bearish outlook on the Nifty Index.                                                                     |
+| **Chart Type**    | Line Chart of Nifty Index                                   | Tracks the Nifty Index over time.                                                                                  |
+| **Time Period**   | Approximately June 2022 - January 2025                     |                                                                         |
+| **Legend**       | NIFTY Index (NSE Nifty 50 Index) NIFTY Index Daily 13DEC2018-07JAN2025 | Explains that the chart tracks the daily Nifty 50 Index from 13DEC2018-07JAN2025.                                 |
+| **Key Support Level** | Range 22500-22700 | The next potential support range to be tested.                                           |
+| **250dma** | Shown on Chart as an upward curve | Is identified to be broken down for the first time since March 2023                                                                                                           |
+| **Potential Head & Shoulders** | Annotated on Chart as three peaks     | Chartists are indicating a potential Head & Shoulders, or a trend reverse pattern                                                                                                           |
+| **Upside Risk Level** | 24800       | An upside risk that can be eased if this index is regained quickly.                                                                                                              |
+| **Analyst**   | Timothy Law, SinoPac Securities, Sales Director, timothy.law@sinopac.com                                   |                                                                         |
+  --- Parent chunk ---
+    (none)
+  --- Previous sibling chunk ---
+    (none)
+  --- Next sibling chunk ---
+    (none)
+
+============================================================
+TOTAL: 1 doc, 0 section, 1 page chunks
+============================================================
