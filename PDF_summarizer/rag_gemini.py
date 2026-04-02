@@ -50,6 +50,10 @@ class RetrievalFilters:
     filenames: Optional[Sequence[str]] = None
     page_min: Optional[int] = None
     page_max: Optional[int] = None
+    sender_names: Optional[Sequence[str]] = None
+    sender_companies: Optional[Sequence[str]] = None
+    sent_date_from: Optional[str] = None
+    sent_date_to: Optional[str] = None
 
 
 class GeminiRAGPipeline:
@@ -121,6 +125,10 @@ class GeminiRAGPipeline:
             filenames=filters.filenames,
             page_min=filters.page_min,
             page_max=filters.page_max,
+            sender_names=filters.sender_names,
+            sender_companies=filters.sender_companies,
+            sent_date_from=filters.sent_date_from,
+            sent_date_to=filters.sent_date_to,
         )
 
         if not raw_chunks:

@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from sqlalchemy import (
     Column,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -37,6 +38,9 @@ class PDFDocument(Base):
     total_pages = Column(Integer, nullable=False)
     file_size_bytes = Column(Integer, nullable=False)
     file_hash = Column(String(64), nullable=False, unique=True)
+    sender_name = Column(String(500), nullable=True)
+    sender_company = Column(String(500), nullable=True)
+    sent_date = Column(Date, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     processed_at = Column(DateTime, nullable=True)
 
@@ -105,6 +109,9 @@ class DatabaseManager:
                     ON pdf_chunks
                     USING hnsw (embedding vector_cosine_ops);
                 """))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_name VARCHAR(500)"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_company VARCHAR(500)"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sent_date DATE"))
                 conn.commit()
 
     def get_session(self):
@@ -119,6 +126,9 @@ class DatabaseManager:
         total_pages: int,
         file_size_bytes: int,
         file_hash: str,
+        sender_name: Optional[str] = None,
+        sender_company: Optional[str] = None,
+        sent_date=None,
     ) -> PDFDocument:
         session = self.get_session()
         try:
@@ -127,8 +137,10 @@ class DatabaseManager:
                 file_path=file_path,
                 total_pages=total_pages,
                 file_size_bytes=file_size_bytes,
-                # Use the provided file_hash so duplicate detection is stable
                 file_hash=file_hash,
+                sender_name=sender_name,
+                sender_company=sender_company,
+                sent_date=sent_date,
             )
             session.add(doc)
             session.commit()
@@ -291,6 +303,10 @@ class DatabaseManager:
         filenames: Optional[Sequence[str]] = None,
         page_min: Optional[int] = None,
         page_max: Optional[int] = None,
+        sender_names: Optional[Sequence[str]] = None,
+        sender_companies: Optional[Sequence[str]] = None,
+        sent_date_from=None,
+        sent_date_to=None,
     ) -> List[PDFChunk]:
         """Vector search over verbalized_summary embeddings."""
         session = self.get_session()
@@ -305,6 +321,14 @@ class DatabaseManager:
                 q = q.filter(PDFChunk.page_number >= page_min)
             if page_max is not None:
                 q = q.filter(PDFChunk.page_number <= page_max)
+            if sender_names:
+                q = q.filter(PDFDocument.sender_name.in_(sender_names))
+            if sender_companies:
+                q = q.filter(PDFDocument.sender_company.in_(sender_companies))
+            if sent_date_from is not None:
+                q = q.filter(PDFDocument.sent_date >= sent_date_from)
+            if sent_date_to is not None:
+                q = q.filter(PDFDocument.sent_date <= sent_date_to)
 
             q = q.order_by(PDFChunk.embedding.cosine_distance(list(query_embedding)))
             return q.limit(limit).all()

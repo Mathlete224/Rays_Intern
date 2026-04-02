@@ -49,7 +49,7 @@ class PDFSummarizerPipeline:
         try:
             print(f"📄 Processing: {filename}")
 
-            chunks, total_pages, file_size_bytes = self.processor.process_pdf(str(pdf_path))
+            chunks, total_pages, file_size_bytes, sender_info = self.processor.process_pdf(str(pdf_path))
 
             doc = self.db_manager.add_document(
                 filename=filename,
@@ -57,6 +57,9 @@ class PDFSummarizerPipeline:
                 total_pages=total_pages,
                 file_size_bytes=file_size_bytes,
                 file_hash=file_hash,
+                sender_name=sender_info.get("sender_name"),
+                sender_company=sender_info.get("sender_company"),
+                sent_date=sender_info.get("sent_date"),
             )
 
             chunk_ids = self.db_manager.add_chunks(doc.id, chunks)

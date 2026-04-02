@@ -7,7 +7,9 @@ Workflow:
   3. Store: One row per page with Text + Chart Summary
 """
 import io
+import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -86,6 +88,55 @@ def _summarize_text_block(text: str, purpose: str) -> str:
     return response.text if hasattr(response, "text") else str(response)
 
 
+def _extract_sender_info(text: str) -> Dict[str, Optional[str]]:
+    """Extract sender name, company, and sent date from document text using Gemini.
+
+    Tries the first 2000 chars first, then the last 2000 chars for any fields
+    still missing (sender/date sometimes appear in email footers at the bottom).
+    """
+    if not text.strip():
+        return {"sender_name": None, "sender_company": None, "sent_date": None}
+
+    _configure_gemini()
+    model = genai.GenerativeModel(TEXT_SUMMARY_MODEL)
+
+    def _run_extraction(excerpt: str) -> Dict[str, Optional[str]]:
+        prompt = (
+            "Extract the sender/author name, their company, and the date this document was sent/published "
+            "from this financial document excerpt. "
+            "Return ONLY valid JSON with keys \"sender_name\", \"sender_company\", and \"sent_date\". "
+            "Use null if not found. Format sent_date as YYYY-MM-DD.\n"
+            "Example: {\"sender_name\": \"John Smith\", \"sender_company\": \"Goldman Sachs\", \"sent_date\": \"2024-03-15\"}\n\n"
+            f"Document text:\n{excerpt}"
+        )
+        try:
+            response = model.generate_content([prompt])
+            raw = response.text.strip() if hasattr(response, "text") else ""
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+            data = json.loads(raw)
+            return {
+                "sender_name": data.get("sender_name"),
+                "sender_company": data.get("sender_company"),
+                "sent_date": data.get("sent_date"),
+            }
+        except Exception:
+            return {"sender_name": None, "sender_company": None, "sent_date": None}
+
+    result = _run_extraction(text[:2000])
+
+    # If any fields are still missing, try the end of the document
+    if not all(result.values()):
+        tail = text[-2000:] if len(text) > 2000 else ""
+        if tail:
+            tail_result = _run_extraction(tail)
+            for key in ("sender_name", "sender_company", "sent_date"):
+                if not result[key] and tail_result[key]:
+                    result[key] = tail_result[key]
+
+    return result
+
+
 @dataclass
 class SectionInfo:
     section_id: str
@@ -149,6 +200,9 @@ class DoclingProcessor:
         except Exception:
             full_markdown = ""
 
+        print(f"   Extracting sender info...")
+        sender_info = _extract_sender_info(full_markdown)
+        print(f"   Sender: {sender_info}")
         print(f"   Summarizing document...")
         doc_summary = _summarize_text_block(full_markdown, purpose="whole document")
         doc_metadata = {
@@ -235,7 +289,7 @@ class DoclingProcessor:
                 }
             )
 
-        return chunks, total_doc_pages, file_size_bytes
+        return chunks, total_doc_pages, file_size_bytes, sender_info
 
     def _get_page_text(self, doc, page_no: int) -> str:
         """Extract text for a single page from Docling document, if available."""
