@@ -16,8 +16,8 @@ from database import DatabaseManager, PDFChunk
 
 # Use model that outputs 3072 dims (schema expects Vector(3072))
 # models/embedding-001 or models/text-embedding-005; gemini-embedding-001 defaults to 3072
-EMBEDDING_MODEL = "models/text-embedding-003-small"
-GENERATION_MODEL = "gemini-1.5-pro"
+EMBEDDING_MODEL = "models/gemini-embedding-001"
+GENERATION_MODEL = "models/gemini-2.0-flash"
 
 load_dotenv()
 
@@ -29,11 +29,18 @@ def _configure_gemini(api_key: Optional[str] = None) -> None:
     genai.configure(api_key=key)
 
 
+EMBEDDING_DIMS = 768  # must match Vector(768) in database.py
+
+
 def embed_text(text: str) -> List[float]:
     if not text.strip():
         return []
     _configure_gemini()
-    result = genai.embed_content(model=EMBEDDING_MODEL, content=text)
+    result = genai.embed_content(
+        model=EMBEDDING_MODEL,
+        content=text,
+        output_dimensionality=EMBEDDING_DIMS,
+    )
     return result["embedding"]
 
 
@@ -48,9 +55,14 @@ class RetrievalFilters:
 class GeminiRAGPipeline:
     """RAG over verbalized pages (text + chart descriptions)."""
 
-    def __init__(self, database_url: str):
+    def __init__(self, database_url: str = None, db: DatabaseManager = None):
         _configure_gemini()
-        self.db = DatabaseManager(database_url)
+        if db is not None:
+            self.db = db
+        elif database_url is not None:
+            self.db = DatabaseManager(database_url)
+        else:
+            raise ValueError("Either database_url or db must be provided")
         self.model = genai.GenerativeModel(GENERATION_MODEL)
 
     def backfill_embeddings(

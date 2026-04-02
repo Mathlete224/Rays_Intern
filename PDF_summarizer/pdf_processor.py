@@ -15,6 +15,7 @@ from typing import Dict, List, Optional, Tuple
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.document import PictureItem
 import google.generativeai as genai
 
 VERBALIZE_MODEL = "gemini-2.0-flash"
@@ -104,8 +105,7 @@ class DoclingProcessor:
         self.gemini_api_key = gemini_api_key or os.getenv("GEMINI_API_KEY")
 
         pipeline_options = PdfPipelineOptions()
-        pipeline_options.images_scale = IMAGE_RESOLUTION_SCALE
-        pipeline_options.generate_page_images = True
+        pipeline_options.generate_page_images = False
         pipeline_options.generate_picture_images = True
 
         self.converter = DocumentConverter(
@@ -149,6 +149,7 @@ class DoclingProcessor:
         except Exception:
             full_markdown = ""
 
+        print(f"   Summarizing document...")
         doc_summary = _summarize_text_block(full_markdown, purpose="whole document")
         doc_metadata = {
             "level": "document",
@@ -169,6 +170,7 @@ class DoclingProcessor:
 
         # ----- Section-level chunks -----
         for sec in sections:
+            print(f"   Summarizing section: '{sec.title}' (pages {sec.start_page}-{sec.end_page})...")
             pages = list(range(sec.start_page, sec.end_page + 1))
             section_text = self._get_pages_text(doc, pages)
             section_summary = _summarize_text_block(
@@ -194,55 +196,41 @@ class DoclingProcessor:
                 }
             )
 
-        # ----- Page-level chunks (with section + sibling context) -----
-        for page_no, page in doc.pages.items():
-            # raw_content: Docling markdown (text + reconstructed tables)
-            raw_content = self._get_page_text(doc, page_no) or ""
+        # ----- Image-level chunks -----
+        image_idx = 0
+        for item, _ in doc.iterate_items():
+            if not isinstance(item, PictureItem):
+                continue
+            if item.image is None or item.image.pil_image is None:
+                continue
 
-            # verbalized_summary: Gemini description of charts (for search embedding)
-            verbalized_summary = ""
-            if page.image is not None and page.image.pil_image is not None:
-                verbalized_summary = _verbalize_page_image(page.image.pil_image)
+            # Determine which page this image is on
+            page_no = None
+            if item.prov:
+                page_no = item.prov[0].page_no
 
-            # enrich with section context
-            sec = page_to_section.get(page_no)
+            # Look up parent section via page number
+            sec = page_to_section.get(page_no) if page_no else None
             section_id = sec.section_id if sec else None
             section_title = sec.title if sec else None
-            section_level = sec.level if sec else None
-            section_span: Optional[Tuple[int, int]] = (
-                (sec.start_page, sec.end_page) if sec else None
-            )
 
-            prev_page_in_section = None
-            next_page_in_section = None
-            if section_span:
-                start, end = section_span
-                if page_no > start:
-                    prev_page_in_section = page_no - 1
-                if page_no < end:
-                    next_page_in_section = page_no + 1
-
+            image_idx += 1
+            print(f"   Verbalizing image {image_idx} (page {page_no}, section: '{section_title or 'unknown'}')...")
+            verbalized = _verbalize_page_image(item.image.pil_image)
+            if not verbalized.strip():
+                continue
             metadata = {
-                "level": "page",
+                "level": "image",
+                "image_index": image_idx,
                 "page_number": page_no,
-                "file_path": str(pdf_path.absolute()),
                 "section_id": section_id,
                 "section_title": section_title,
-                "section_level": section_level,
-                "section_page_span": list(section_span) if section_span else None,
-                "prev_page_in_section": prev_page_in_section,
-                "next_page_in_section": next_page_in_section,
+                "file_path": str(pdf_path.absolute()),
             }
-
-            # raw_content must be non-empty; use verbalized_summary if Docling returned nothing
-            content_for_storage = raw_content if raw_content.strip() else verbalized_summary
-            if not content_for_storage.strip():
-                content_for_storage = f"[Page {page_no}]"
-
             chunks.append(
                 {
-                    "raw_content": content_for_storage,
-                    "verbalized_summary": verbalized_summary or None,
+                    "raw_content": verbalized,
+                    "verbalized_summary": verbalized,
                     "metadata": metadata,
                 }
             )

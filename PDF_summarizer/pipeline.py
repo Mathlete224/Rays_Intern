@@ -13,6 +13,7 @@ import uuid as uuid_lib
 
 from database import DatabaseManager
 from pdf_processor import DoclingProcessor
+from rag_gemini import GeminiRAGPipeline
 from utils import get_file_hash
 
 class PDFSummarizerPipeline:
@@ -21,6 +22,7 @@ class PDFSummarizerPipeline:
     def __init__(self, database_url: str = "sqlite:///pdf_summarizer.db"):
         self.db_manager = DatabaseManager(database_url)
         self.processor = DoclingProcessor()
+        self.rag = GeminiRAGPipeline(db=self.db_manager)
 
     def process_single_pdf(
         self,
@@ -59,6 +61,9 @@ class PDFSummarizerPipeline:
 
             chunk_ids = self.db_manager.add_chunks(doc.id, chunks)
             self._set_parent_sibling_metadata(chunk_ids, chunks)
+
+            print(f"   Generating embeddings...")
+            self.rag.backfill_embeddings()
 
             print(f"✅ Done: {filename}")
             print(f"   Pages: {total_pages}")
@@ -124,7 +129,6 @@ class PDFSummarizerPipeline:
         """
         doc_idx: int | None = None
         section_id_to_idx: dict = {}
-        page_to_idx: dict = {}  # page_number -> index
 
         for i, c_dict in enumerate(chunks):
             meta = c_dict.get("metadata") or {}
@@ -135,10 +139,6 @@ class PDFSummarizerPipeline:
                 sid = meta.get("section_id")
                 if sid is not None:
                     section_id_to_idx[sid] = i
-            elif level == "page":
-                pn = meta.get("page_number")
-                if pn is not None:
-                    page_to_idx[pn] = i
 
         for i, c_dict in enumerate(chunks):
             meta = dict(c_dict.get("metadata") or {})
@@ -153,16 +153,10 @@ class PDFSummarizerPipeline:
                     prev_sib_id = str(chunk_ids[i - 1])
                 if i < len(chunks) - 1 and (chunks[i + 1].get("metadata") or {}).get("level") == "section":
                     next_sib_id = str(chunk_ids[i + 1])
-            elif level == "page":
+            elif level == "image":
                 sid = meta.get("section_id")
                 if sid and sid in section_id_to_idx:
                     parent_id = str(chunk_ids[section_id_to_idx[sid]])
-                prev_page = meta.get("prev_page_in_section")
-                next_page = meta.get("next_page_in_section")
-                if prev_page is not None and prev_page in page_to_idx:
-                    prev_sib_id = str(chunk_ids[page_to_idx[prev_page]])
-                if next_page is not None and next_page in page_to_idx:
-                    next_sib_id = str(chunk_ids[page_to_idx[next_page]])
 
             meta["parent_chunk_id"] = parent_id
             meta["prev_sibling_chunk_id"] = prev_sib_id

@@ -15,10 +15,10 @@ import os
 import sys
 import uuid as uuid_lib
 from pathlib import Path
-
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
+
 
 try:
     from database import DatabaseManager

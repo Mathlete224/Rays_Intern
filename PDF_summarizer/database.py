@@ -64,7 +64,7 @@ class PDFChunk(Base):
     document_id = Column(Integer, ForeignKey("pdf_documents.id"), nullable=False)
 
     # Verbalization vector — embed verbalized_summary, search against this
-    embedding = Column(Vector(1024), nullable=True)
+    embedding = Column(Vector(768), nullable=True)
 
     # Original Docling markdown (text + reconstructed tables) — use for answering
     raw_content = Column(Text, nullable=False)
@@ -95,18 +95,17 @@ class DatabaseManager:
             database_url: postgresql+psycopg://user:pass@localhost/pdf_summarizer
         """
         self.engine = create_engine(database_url, echo=False)
+        self.SessionLocal = sessionmaker(bind=self.engine)
+        Base.metadata.create_all(self.engine)
 
         if database_url.startswith("postgresql"):
             with self.engine.connect() as conn:
                 conn.execute(text("""
                     CREATE INDEX IF NOT EXISTS pdf_chunks_embedding_idx
                     ON pdf_chunks
-                    USING ivfflat (embedding vector_cosine_ops)
-                    WITH (lists = 100);
+                    USING hnsw (embedding vector_cosine_ops);
                 """))
-
-        self.SessionLocal = sessionmaker(bind=self.engine)
-        Base.metadata.create_all(self.engine)
+                conn.commit()
 
     def get_session(self):
         return self.SessionLocal()
