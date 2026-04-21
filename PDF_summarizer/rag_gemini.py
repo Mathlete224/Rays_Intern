@@ -104,6 +104,11 @@ class GeminiRAGPipeline:
 
         return total
 
+    # Minimum cosine similarity for a chunk to be considered relevant.
+    # Cosine similarity ranges 0–1; chunks below this are discarded rather than
+    # passed as context, preventing the model from hallucinating from unrelated content.
+    SIMILARITY_THRESHOLD = 0.40
+
     def retrieve_relevant_chunks(
         self,
         query: str,
@@ -113,7 +118,8 @@ class GeminiRAGPipeline:
         """
         Vector search over verbalized_summary embeddings.
 
-        Returns the top_k most relevant chunks (default 3). Optional diversity re-ranking.
+        Returns the top_k most relevant chunks (default 3) that exceed
+        SIMILARITY_THRESHOLD. Returns an empty list if nothing is relevant enough.
         """
         if filters is None:
             filters = RetrievalFilters()
@@ -131,6 +137,7 @@ class GeminiRAGPipeline:
             sender_companies=filters.sender_companies,
             written_date_from=filters.written_date_from,
             written_date_to=filters.written_date_to,
+            similarity_threshold=self.SIMILARITY_THRESHOLD,
         )
 
         if not raw_chunks:
@@ -193,6 +200,9 @@ class GeminiRAGPipeline:
             meta = c.metadata_ or {}
             summary = (c.verbalized_summary or "").strip()
             content = (c.raw_content or "").strip()
+            filename = c.document.filename if c.document else f"document_id={c.document_id}"
+            page = f" page {c.page_number}" if c.page_number is not None else ""
+            lines.append(f"  {role} source: {filename}{page}")
             lines.append(f"  {role} metadata: {meta}")
             lines.append(f"  {role} summary: {summary[:1500]}{'...' if len(summary) > 1500 else ''}")
             lines.append(f"  {role} content: {content[:4000]}{'...' if len(content) > 4000 else ''}")
@@ -221,16 +231,31 @@ class GeminiRAGPipeline:
     ) -> dict:
         """Return top_k chunks (default 3), expand each with parent + siblings, feed ~9 chunks to context."""
         chunks = self.retrieve_relevant_chunks(question, top_k=top_k, filters=filters)
+
+        if not chunks:
+            return {
+                "answer": (
+                    "No sufficiently relevant content was found in the uploaded documents "
+                    "to answer this question. Try rephrasing, or check that the relevant "
+                    "document has been uploaded and its embeddings backfilled."
+                ),
+                "chunks_used": [],
+            }
+
         context = self._build_context(chunks)
 
         system = (
             "You are a financial analysis assistant. Use ONLY the provided context "
-            "(original document content from reports) to answer. If not derivable, say you don't know."
+            "(original document content from reports) to answer. If the answer is not "
+            "derivable from the context, say you don't know.\n"
+            "Each chunk in the context has a 'source:' line indicating the filename and page. "
+            "When citing information, reference ONLY those exact filenames and page numbers — "
+            "do not invent or guess document names."
         )
         prompt = (
             f"{system}\n\nContext:\n{context}\n\n"
             f"Question: {question}\n\n"
-            f"Answer clearly. Reference document/page when relevant."
+            f"Answer clearly, citing the filename and page from the 'source:' field when relevant."
         )
 
         for attempt in range(4):

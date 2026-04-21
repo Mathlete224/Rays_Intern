@@ -21,7 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm import joinedload, relationship, sessionmaker
 from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
@@ -257,7 +257,12 @@ class DatabaseManager:
     def get_chunk_by_id(self, chunk_id: uuid.UUID) -> Optional[PDFChunk]:
         session = self.get_session()
         try:
-            return session.query(PDFChunk).filter_by(id=chunk_id).first()
+            return (
+                session.query(PDFChunk)
+                .options(joinedload(PDFChunk.document))
+                .filter_by(id=chunk_id)
+                .first()
+            )
         finally:
             session.close()
 
@@ -315,15 +320,23 @@ class DatabaseManager:
         page_max: Optional[int] = None,
         sender_names: Optional[Sequence[str]] = None,
         sender_companies: Optional[Sequence[str]] = None,
-        sent_date_from=None,
-        sent_date_to=None,
         written_date_from=None,
         written_date_to=None,
+        similarity_threshold: float = 0.0,
     ) -> List[PDFChunk]:
-        """Vector search over verbalized_summary embeddings."""
+        """Vector search over verbalized_summary embeddings.
+
+        Args:
+            similarity_threshold: Minimum cosine similarity (0–1) a chunk must score
+                to be returned. Cosine distance = 1 − similarity, so a threshold of
+                0.4 discards anything with distance > 0.6. Defaults to 0.0 (no filter).
+        """
         session = self.get_session()
         try:
-            q = session.query(PDFChunk).join(PDFDocument)
+            embedding_list = list(query_embedding)
+            distance_col = PDFChunk.embedding.cosine_distance(embedding_list)
+
+            q = session.query(PDFChunk).join(PDFDocument).options(joinedload(PDFChunk.document))
 
             if document_ids:
                 q = q.filter(PDFChunk.document_id.in_(document_ids))
@@ -337,16 +350,14 @@ class DatabaseManager:
                 q = q.filter(PDFDocument.sender_name.in_(sender_names))
             if sender_companies:
                 q = q.filter(PDFDocument.sender_company.in_(sender_companies))
-            if sent_date_from is not None:
-                q = q.filter(PDFDocument.sent_date >= sent_date_from)
-            if sent_date_to is not None:
-                q = q.filter(PDFDocument.sent_date <= sent_date_to)
             if written_date_from is not None:
                 q = q.filter(PDFDocument.written_date >= written_date_from)
             if written_date_to is not None:
                 q = q.filter(PDFDocument.written_date <= written_date_to)
+            if similarity_threshold > 0.0:
+                q = q.filter(distance_col <= (1.0 - similarity_threshold))
 
-            q = q.order_by(PDFChunk.embedding.cosine_distance(list(query_embedding)))
+            q = q.order_by(distance_col)
             return q.limit(limit).all()
         finally:
             session.close()
