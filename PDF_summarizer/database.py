@@ -41,6 +41,7 @@ class PDFDocument(Base):
     sender_name = Column(String(500), nullable=True)
     sender_company = Column(String(500), nullable=True)
     sent_date = Column(Date, nullable=True)
+    written_date = Column(Date, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     processed_at = Column(DateTime, nullable=True)
 
@@ -104,15 +105,24 @@ class DatabaseManager:
 
         if database_url.startswith("postgresql"):
             with self.engine.connect() as conn:
-                conn.execute(text("""
-                    CREATE INDEX IF NOT EXISTS pdf_chunks_embedding_idx
-                    ON pdf_chunks
-                    USING hnsw (embedding vector_cosine_ops);
-                """))
+                # Schema migrations — always safe
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_name VARCHAR(500)"))
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_company VARCHAR(500)"))
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sent_date DATE"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS written_date DATE"))
                 conn.commit()
+
+            # pgvector index — requires the vector extension; skip gracefully if not installed
+            try:
+                with self.engine.connect() as conn:
+                    conn.execute(text("""
+                        CREATE INDEX IF NOT EXISTS pdf_chunks_embedding_idx
+                        ON pdf_chunks
+                        USING hnsw (embedding vector_cosine_ops);
+                    """))
+                    conn.commit()
+            except Exception as e:
+                print(f"[WARNING] Could not create pgvector index (is the 'vector' extension installed?): {e}")
 
     def get_session(self):
         return self.SessionLocal()
@@ -307,6 +317,8 @@ class DatabaseManager:
         sender_companies: Optional[Sequence[str]] = None,
         sent_date_from=None,
         sent_date_to=None,
+        written_date_from=None,
+        written_date_to=None,
     ) -> List[PDFChunk]:
         """Vector search over verbalized_summary embeddings."""
         session = self.get_session()
@@ -329,6 +341,10 @@ class DatabaseManager:
                 q = q.filter(PDFDocument.sent_date >= sent_date_from)
             if sent_date_to is not None:
                 q = q.filter(PDFDocument.sent_date <= sent_date_to)
+            if written_date_from is not None:
+                q = q.filter(PDFDocument.written_date >= written_date_from)
+            if written_date_to is not None:
+                q = q.filter(PDFDocument.written_date <= written_date_to)
 
             q = q.order_by(PDFChunk.embedding.cosine_distance(list(query_embedding)))
             return q.limit(limit).all()

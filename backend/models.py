@@ -1,5 +1,5 @@
 """Pydantic request/response schemas for the FastAPI backend."""
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
@@ -13,6 +13,10 @@ class DocumentOut(BaseModel):
     filename: str
     total_pages: int
     file_size_bytes: int
+    sender_name: Optional[str] = None
+    sender_company: Optional[str] = None
+    sent_date: Optional[date] = None
+    written_date: Optional[date] = None
     uploaded_at: datetime
     processed_at: Optional[datetime] = None
 
@@ -36,6 +40,10 @@ class AskRequest(BaseModel):
     filenames: Optional[List[str]] = None
     page_min: Optional[int] = None
     page_max: Optional[int] = None
+    sender_names: Optional[List[str]] = None
+    sender_companies: Optional[List[str]] = None
+    written_date_from: Optional[date] = None
+    written_date_to: Optional[date] = None
 
 
 class ChunkRef(BaseModel):

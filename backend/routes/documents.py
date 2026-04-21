@@ -25,6 +25,10 @@ def list_documents(db: DatabaseManager = Depends(get_db)):
                 filename=d.filename,
                 total_pages=d.total_pages,
                 file_size_bytes=d.file_size_bytes,
+                sender_name=d.sender_name,
+                sender_company=d.sender_company,
+                sent_date=d.sent_date,
+                written_date=d.written_date,
                 uploaded_at=d.uploaded_at,
                 processed_at=d.processed_at,
             )

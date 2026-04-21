@@ -1,26 +1,37 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDocumentStore } from '../store/documentStore';
 import { useCanvasStore } from '../store/canvasStore';
+import { useChatStore } from '../store/chatStore';
+import { useFilterStore } from '../store/filterStore';
 
-export function Sidebar() {
+export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }) {
   const { documents, loading, fetchDocuments, upload, remove } = useDocumentStore();
   const { savedCanvases, fetchSavedCanvases, loadCanvas, removeCanvas, newCanvas } = useCanvasStore();
+  const { sessions, activeSessionId, newSession, deleteSession, setActiveSession, renameSession } = useChatStore();
+  const {
+    company, author, writtenDateFrom, writtenDateTo,
+    setCompany, setAuthor, setWrittenDateFrom, setWrittenDateTo,
+    reset: resetFilters, activeCount,
+  } = useFilterStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   useEffect(() => {
     fetchDocuments();
     fetchSavedCanvases();
-  }, [fetchDocuments, fetchSavedCanvases]);
+  }, []);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     setUploading(true);
     setUploadError(null);
     try {
-      await upload(file);
+      for (const file of files) {
+        await upload(file);
+      }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Upload failed';
       setUploadError(msg);
@@ -30,14 +41,112 @@ export function Sidebar() {
     }
   }
 
+  // Client-side filter for the document list
+  const filteredDocs = documents.filter(doc => {
+    if (company && !doc.sender_company?.toLowerCase().includes(company.toLowerCase())) return false;
+    if (author && !doc.sender_name?.toLowerCase().includes(author.toLowerCase())) return false;
+    if (writtenDateFrom && doc.written_date && doc.written_date < writtenDateFrom) return false;
+    if (writtenDateTo && doc.written_date && doc.written_date > writtenDateTo) return false;
+    return true;
+  });
+
+  const count = activeCount();
+
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full overflow-hidden">
       <div className="flex-1 overflow-y-auto">
 
+        {/* Filters section */}
+        <div className="border-b border-gray-200">
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filters</h2>
+              {count > 0 && (
+                <span className="text-xs bg-blue-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                  {count}
+                </span>
+              )}
+            </div>
+            <svg
+              className={`w-3.5 h-3.5 text-gray-400 transition-transform ${filtersOpen ? 'rotate-180' : ''}`}
+              fill="none" stroke="currentColor" viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {filtersOpen && (
+            <div className="px-3 pb-3 space-y-2.5">
+              {/* Company */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Company</label>
+                <input
+                  type="text"
+                  value={company}
+                  onChange={e => setCompany(e.target.value)}
+                  placeholder="e.g. Apple"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                />
+              </div>
+
+              {/* Author */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Author</label>
+                <input
+                  type="text"
+                  value={author}
+                  onChange={e => setAuthor(e.target.value)}
+                  placeholder="e.g. John Smith"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                />
+              </div>
+
+              {/* Date written */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Date written</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="date"
+                    value={writtenDateFrom}
+                    onChange={e => setWrittenDateFrom(e.target.value)}
+                    className="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                  />
+                  <span className="text-xs text-gray-400 shrink-0">–</span>
+                  <input
+                    type="date"
+                    value={writtenDateTo}
+                    onChange={e => setWrittenDateTo(e.target.value)}
+                    className="flex-1 min-w-0 text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                  />
+                </div>
+              </div>
+
+              {count > 0 && (
+                <button
+                  onClick={resetFilters}
+                  className="w-full text-xs text-red-400 hover:text-red-600 text-center py-1 transition-colors"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Documents section */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</h2>
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</h2>
+              {count > 0 && documents.length > 0 && (
+                <span className="text-xs text-gray-400">
+                  {filteredDocs.length}/{documents.length}
+                </span>
+              )}
+            </div>
             <button
               onClick={() => { setUploadError(null); fileRef.current?.click(); }}
               disabled={uploading}
@@ -45,7 +154,7 @@ export function Sidebar() {
             >
               + Upload
             </button>
-            <input ref={fileRef} type="file" accept=".pdf" className="hidden" onChange={handleUpload} />
+            <input ref={fileRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
           </div>
 
           {/* Upload progress banner */}
@@ -71,9 +180,11 @@ export function Sidebar() {
             <p className="text-xs text-gray-400 text-center py-2">Loading…</p>
           ) : documents.length === 0 && !uploading ? (
             <p className="text-xs text-gray-400 text-center py-2">No documents yet</p>
+          ) : filteredDocs.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-2">No documents match filters</p>
           ) : (
             <ul className="space-y-1">
-              {documents.map(doc => (
+              {filteredDocs.map(doc => (
                 <li
                   key={doc.id}
                   className="flex items-start justify-between gap-1 bg-white rounded-lg px-2 py-1.5 text-xs border border-gray-100"
@@ -82,7 +193,13 @@ export function Sidebar() {
                     <p className="font-medium text-gray-700 truncate" title={doc.filename}>
                       {doc.filename}
                     </p>
-                    <p className="text-gray-400">{doc.total_pages} pages</p>
+                    <p className="text-gray-400">
+                      {doc.total_pages} pages
+                      {doc.sender_company && <span> · {doc.sender_company}</span>}
+                    </p>
+                    {doc.written_date && (
+                      <p className="text-gray-400">Written {doc.written_date}</p>
+                    )}
                   </div>
                   <button
                     onClick={() => remove(doc.id)}
@@ -132,6 +249,54 @@ export function Sidebar() {
                     onClick={() => {
                       if (confirm(`Delete canvas "${c.name}"?`)) removeCanvas(c.id);
                     }}
+                    className="text-gray-300 hover:text-red-400 shrink-0"
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Chats section */}
+        <div className="p-3 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chats</h2>
+            <button
+              onClick={() => { newSession(`Chat ${sessions.length + 1}`); setView('chat'); }}
+              className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md transition-colors"
+            >
+              + New
+            </button>
+          </div>
+
+          {sessions.length === 0 ? (
+            <p className="text-xs text-gray-400 text-center py-2">No chats yet</p>
+          ) : (
+            <ul className="space-y-1">
+              {sessions.map(s => (
+                <li
+                  key={s.id}
+                  className={`flex items-center justify-between gap-1 rounded-lg px-2 py-1.5 text-xs border ${
+                    s.id === activeSessionId
+                      ? 'bg-blue-50 border-blue-200'
+                      : 'bg-white border-gray-100'
+                  }`}
+                >
+                  <button
+                    className="text-gray-700 hover:text-blue-600 font-medium truncate text-left flex-1"
+                    onClick={() => { setActiveSession(s.id); setView('chat'); }}
+                    title={s.name}
+                    onDoubleClick={() => {
+                      const name = prompt('Rename chat:', s.name);
+                      if (name) renameSession(s.id, name);
+                    }}
+                  >
+                    {s.name}
+                  </button>
+                  <button
+                    onClick={() => deleteSession(s.id)}
                     className="text-gray-300 hover:text-red-400 shrink-0"
                   >
                     ×

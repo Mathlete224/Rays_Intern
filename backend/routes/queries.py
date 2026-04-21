@@ -21,6 +21,10 @@ async def ask_question(
         filenames=req.filenames,
         page_min=req.page_min,
         page_max=req.page_max,
+        sender_names=req.sender_names,
+        sender_companies=req.sender_companies,
+        written_date_from=req.written_date_from,
+        written_date_to=req.written_date_to,
     )
     result = await run_in_threadpool(
         rag.answer_question, req.question, top_k=req.top_k, filters=filters

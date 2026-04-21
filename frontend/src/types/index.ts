@@ -3,6 +3,10 @@ export interface Document {
   filename: string;
   total_pages: number;
   file_size_bytes: number;
+  sender_name: string | null;
+  sender_company: string | null;
+  sent_date: string | null;
+  written_date: string | null;
   uploaded_at: string;
   processed_at: string | null;
 }
@@ -21,6 +25,10 @@ export interface AskRequest {
   filenames?: string[];
   page_min?: number;
   page_max?: number;
+  sender_names?: string[];
+  sender_companies?: string[];
+  written_date_from?: string;
+  written_date_to?: string;
 }
 
 export interface AskResponse {

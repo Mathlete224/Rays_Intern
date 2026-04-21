@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { AnswerNodeData } from '../../types';
+import { useDocumentStore } from '../../store/documentStore';
 
 export function AnswerNode({ data }: NodeProps) {
   const nodeData = data as unknown as AnswerNodeData;
   const [expanded, setExpanded] = useState(false);
+  const { documents } = useDocumentStore();
+  const docMap = Object.fromEntries(documents.map(d => [d.id, d.filename]));
 
   return (
     <div className="bg-white border-2 border-green-400 rounded-xl shadow-lg w-80 p-4 text-sm">
@@ -56,7 +59,8 @@ export function AnswerNode({ data }: NodeProps) {
                 className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded"
                 title={`Chunk ${c.chunk_id}`}
               >
-                p.{c.page_number ?? '—'}
+                {docMap[c.document_id] ?? `doc ${c.document_id}`}
+                {c.page_number != null ? ` p.${c.page_number}` : ''}
               </span>
             ))}
           </div>

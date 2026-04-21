@@ -5,11 +5,13 @@ Flow: Return top 3 most relevant chunks; for each, include metadata + summary of
 its parent, and its siblings, then repeat for the other two (~9 chunks in context).
 """
 import os
+import time
 import uuid as uuid_lib
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from dotenv import load_dotenv
+import google.api_core.exceptions
 import google.generativeai as genai
 
 from database import DatabaseManager, PDFChunk
@@ -52,8 +54,8 @@ class RetrievalFilters:
     page_max: Optional[int] = None
     sender_names: Optional[Sequence[str]] = None
     sender_companies: Optional[Sequence[str]] = None
-    sent_date_from: Optional[str] = None
-    sent_date_to: Optional[str] = None
+    written_date_from: Optional[str] = None
+    written_date_to: Optional[str] = None
 
 
 class GeminiRAGPipeline:
@@ -127,8 +129,8 @@ class GeminiRAGPipeline:
             page_max=filters.page_max,
             sender_names=filters.sender_names,
             sender_companies=filters.sender_companies,
-            sent_date_from=filters.sent_date_from,
-            sent_date_to=filters.sent_date_to,
+            written_date_from=filters.written_date_from,
+            written_date_to=filters.written_date_to,
         )
 
         if not raw_chunks:
@@ -231,7 +233,16 @@ class GeminiRAGPipeline:
             f"Answer clearly. Reference document/page when relevant."
         )
 
-        response = self.model.generate_content(prompt)
+        for attempt in range(4):
+            try:
+                response = self.model.generate_content(prompt)
+                break
+            except google.api_core.exceptions.ResourceExhausted:
+                if attempt == 3:
+                    raise
+                wait = 15 * (2 ** attempt)  # 15s, 30s, 60s
+                print(f"[WARNING] Gemini rate limited, retrying in {wait}s (attempt {attempt + 1}/4)")
+                time.sleep(wait)
         answer = response.text if hasattr(response, "text") else str(response)
 
         return {
