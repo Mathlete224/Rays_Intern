@@ -46,3 +46,4 @@ Thumbs.db
 pdfs/
 *.pdf
 !example_financial_report.pdf
+.gemini_rate_state.json

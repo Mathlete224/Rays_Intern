@@ -14,15 +14,15 @@ from typing import List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "PDF_summarizer"))
 
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env"))
 
 from rag_gemini import GeminiRAGPipeline, RetrievalFilters
 
-DECOMPOSE_MODEL = "gemini-2.0-flash"
-SYNTHESIS_MODEL = "gemini-2.0-flash"
+DECOMPOSE_MODEL = "models/gemini-2.5-flash"
+SYNTHESIS_MODEL = "models/gemini-2.5-flash"
 
 
 class ResearchAgent:
@@ -31,9 +31,7 @@ class ResearchAgent:
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise RuntimeError("GEMINI_API_KEY not set")
-        genai.configure(api_key=api_key)
-        self.decompose_model = genai.GenerativeModel(DECOMPOSE_MODEL)
-        self.synthesis_model = genai.GenerativeModel(SYNTHESIS_MODEL)
+        self.client = genai.Client(api_key=api_key)
 
     def run(
         self,
@@ -81,7 +79,7 @@ class ResearchAgent:
             "Example: [\"What was revenue in Q3?\", \"What are the main risk factors?\"]"
         )
 
-        response = self.decompose_model.generate_content(prompt)
+        response = self.client.models.generate_content(model=DECOMPOSE_MODEL, contents=prompt)
         raw = response.text.strip() if hasattr(response, "text") else str(response).strip()
 
         # Strip markdown code fences if present
@@ -123,5 +121,5 @@ class ResearchAgent:
             "Write the synthesis report:"
         )
 
-        response = self.synthesis_model.generate_content(prompt)
+        response = self.client.models.generate_content(model=SYNTHESIS_MODEL, contents=prompt)
         return response.text.strip() if hasattr(response, "text") else str(response).strip()

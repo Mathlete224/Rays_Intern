@@ -12,23 +12,24 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from dotenv import load_dotenv
 import google.api_core.exceptions
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from database import DatabaseManager, PDFChunk
 
 # Use model that outputs 3072 dims (schema expects Vector(3072))
 # models/embedding-001 or models/text-embedding-005; gemini-embedding-001 defaults to 3072
 EMBEDDING_MODEL = "models/gemini-embedding-001"
-GENERATION_MODEL = "models/gemini-2.0-flash"
+GENERATION_MODEL = "models/gemini-2.5-flash"
 
 load_dotenv()
 
 
-def _configure_gemini(api_key: Optional[str] = None) -> None:
+def _get_client(api_key: Optional[str] = None) -> genai.Client:
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY not set")
-    genai.configure(api_key=key)
+    return genai.Client(api_key=key)
 
 
 EMBEDDING_DIMS = 768  # must match Vector(768) in database.py
@@ -37,13 +38,13 @@ EMBEDDING_DIMS = 768  # must match Vector(768) in database.py
 def embed_text(text: str) -> List[float]:
     if not text.strip():
         return []
-    _configure_gemini()
-    result = genai.embed_content(
+    client = _get_client()
+    result = client.models.embed_content(
         model=EMBEDDING_MODEL,
-        content=text,
-        output_dimensionality=EMBEDDING_DIMS,
+        contents=text,
+        config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMS),
     )
-    return result["embedding"]
+    return list(result.embeddings[0].values)
 
 
 @dataclass
@@ -62,14 +63,13 @@ class GeminiRAGPipeline:
     """RAG over verbalized pages (text + chart descriptions)."""
 
     def __init__(self, database_url: str = None, db: DatabaseManager = None):
-        _configure_gemini()
+        self.client = _get_client()
         if db is not None:
             self.db = db
         elif database_url is not None:
             self.db = DatabaseManager(database_url)
         else:
             raise ValueError("Either database_url or db must be provided")
-        self.model = genai.GenerativeModel(GENERATION_MODEL)
 
     def backfill_embeddings(
         self,
@@ -260,7 +260,7 @@ class GeminiRAGPipeline:
 
         for attempt in range(4):
             try:
-                response = self.model.generate_content(prompt)
+                response = self.client.models.generate_content(model=GENERATION_MODEL, contents=prompt)
                 break
             except google.api_core.exceptions.ResourceExhausted:
                 if attempt == 3:

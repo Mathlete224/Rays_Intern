@@ -177,8 +177,8 @@ def main() -> None:
 
         # Clear database first (test default)
         db = DatabaseManager(database_url=DB_URL)
-        n = db.delete_all_documents()
-        print(f"Cleared database: removed {n} document(s).\n")
+        # n = db.delete_all_documents()
+        # print(f"Cleared database: removed {n} document(s).\n")
 
         try:
             pdf_path = _find_pdf_path()

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+
+const CIRCUMFERENCE = 2 * Math.PI * 9; // r=9 in a 24×24 viewBox
 import { useDocumentStore } from '../store/documentStore';
 import { useCanvasStore } from '../store/canvasStore';
 import { useChatStore } from '../store/chatStore';
@@ -17,6 +19,14 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  useEffect(() => {
+    if (!uploading) { setUploadProgress(0); return; }
+    // Simulate progress: fill to ~85% over ~2 minutes, then hold until done.
+    const id = setInterval(() => setUploadProgress(p => Math.min(p + 0.7, 85)), 1000);
+    return () => clearInterval(id);
+  }, [uploading]);
 
   useEffect(() => {
     fetchDocuments();
@@ -159,14 +169,32 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
 
           {/* Upload progress banner */}
           {uploading && (
-            <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-2">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin shrink-0" />
-                <span className="text-xs font-medium text-blue-700">Processing PDF…</span>
+            <div className="mb-2 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
+              <div className="shrink-0">
+                <svg width="36" height="36" viewBox="0 0 24 24">
+                  {/* Track */}
+                  <circle cx="12" cy="12" r="9" fill="none" stroke="#bfdbfe" strokeWidth="2.5" />
+                  {/* Fill */}
+                  <circle
+                    cx="12" cy="12" r="9"
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeDasharray={CIRCUMFERENCE}
+                    strokeDashoffset={CIRCUMFERENCE * (1 - uploadProgress / 100)}
+                    style={{ transform: 'rotate(-90deg)', transformOrigin: 'center', transition: 'stroke-dashoffset 0.8s ease' }}
+                  />
+                  {/* Percentage */}
+                  <text x="12" y="12" dominantBaseline="central" textAnchor="middle" fontSize="5.5" fill="#3b82f6" fontWeight="600">
+                    {Math.round(uploadProgress)}%
+                  </text>
+                </svg>
               </div>
-              <p className="text-xs text-blue-500 leading-tight">
-                Docling is parsing the document and Gemini is verbalizing charts. This takes <strong>1–3 minutes</strong> — please wait.
-              </p>
+              <div>
+                <p className="text-xs font-medium text-blue-700 mb-0.5">Processing PDF…</p>
+                <p className="text-xs text-blue-500 leading-tight">Parsing &amp; verbalizing charts.<br />Takes 1–3 min.</p>
+              </div>
             </div>
           )}
 

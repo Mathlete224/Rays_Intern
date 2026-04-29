@@ -10,6 +10,7 @@ import io
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -18,18 +19,35 @@ from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from docling.datamodel.document import PictureItem
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
-VERBALIZE_MODEL = "gemini-2.0-flash"
-TEXT_SUMMARY_MODEL = "gemini-2.0-flash"
+VERBALIZE_MODEL = "models/gemini-2.5-flash"
+TEXT_SUMMARY_MODEL = "models/gemini-2.5-flash"
 IMAGE_RESOLUTION_SCALE = 2.0
 
 
-def _configure_gemini(api_key: Optional[str] = None) -> None:
+def _get_client(api_key: Optional[str] = None) -> genai.Client:
     key = api_key or os.getenv("GEMINI_API_KEY")
     if not key:
         raise RuntimeError("GEMINI_API_KEY not set in environment")
-    genai.configure(api_key=key)
+    return genai.Client(api_key=key)
+
+
+def _generate_with_retry(client: genai.Client, model: str, contents, max_attempts: int = 5):
+    """Call generate_content with exponential backoff on 429 errors."""
+    for attempt in range(max_attempts):
+        try:
+            return client.models.generate_content(model=model, contents=contents)
+        except Exception as e:
+            if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
+                if attempt == max_attempts - 1:
+                    raise
+                wait = 30 * (2 ** attempt)  # 30s, 60s, 120s, 240s
+                print(f"   [WARNING] Gemini still rate limited despite throttling, retrying in {wait}s (attempt {attempt + 1}/{max_attempts})")
+                time.sleep(wait)
+            else:
+                raise
 
 
 def _verbalize_page_image(pil_image, model_name: str = VERBALIZE_MODEL) -> str:
@@ -38,8 +56,7 @@ def _verbalize_page_image(pil_image, model_name: str = VERBALIZE_MODEL) -> str:
     (Used for embedding/search. Raw text comes from Docling.)
     """
     # return "GEMINI_DISABLED: This is a placeholder for testing database ingestion."
-    _configure_gemini()
-    model = genai.GenerativeModel(model_name)
+    client = _get_client()
 
     prompt = (
         "You are a financial analyst. Summarize this single page of a larger financial report. "
@@ -54,8 +71,9 @@ def _verbalize_page_image(pil_image, model_name: str = VERBALIZE_MODEL) -> str:
     pil_image.save(buf, format="PNG")
     buf.seek(0)
 
-    response = model.generate_content(
-        [prompt, {"mime_type": "image/png", "data": buf.getvalue()}]
+    response = _generate_with_retry(
+        client, model_name,
+        [prompt, types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png")],
     )
     return response.text if hasattr(response, "text") else str(response)
 
@@ -69,8 +87,7 @@ def _summarize_text_block(text: str, purpose: str) -> str:
     if not text.strip():
         return ""
 
-    _configure_gemini()
-    model = genai.GenerativeModel(TEXT_SUMMARY_MODEL)
+    client = _get_client()
 
     prompt = (
         "You are a senior equity research analyst.\n"
@@ -84,7 +101,7 @@ def _summarize_text_block(text: str, purpose: str) -> str:
     if len(text) > 20000:
         text = text[:20000]
 
-    response = model.generate_content([prompt, text])
+    response = _generate_with_retry(client, TEXT_SUMMARY_MODEL, [prompt, text])
     return response.text if hasattr(response, "text") else str(response)
 
 
@@ -97,8 +114,7 @@ def _extract_sender_info(text: str) -> Dict[str, Optional[str]]:
     if not text.strip():
         return {"sender_name": None, "sender_company": None, "sent_date": None}
 
-    _configure_gemini()
-    model = genai.GenerativeModel(TEXT_SUMMARY_MODEL)
+    client = _get_client()
 
     def _run_extraction(excerpt: str) -> Dict[str, Optional[str]]:
         prompt = (
@@ -110,7 +126,7 @@ def _extract_sender_info(text: str) -> Dict[str, Optional[str]]:
             f"Document text:\n{excerpt}"
         )
         try:
-            response = model.generate_content([prompt])
+            response = _generate_with_retry(client, TEXT_SUMMARY_MODEL, prompt)
             raw = response.text.strip() if hasattr(response, "text") else ""
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
@@ -200,10 +216,7 @@ class DoclingProcessor:
         except Exception:
             full_markdown = ""
 
-        print(f"   Extracting sender info...")
         sender_info = _extract_sender_info(full_markdown)
-        print(f"   Sender: {sender_info}")
-        print(f"   Summarizing document...")
         doc_summary = _summarize_text_block(full_markdown, purpose="whole document")
         doc_metadata = {
             "level": "document",
@@ -224,7 +237,6 @@ class DoclingProcessor:
 
         # ----- Section-level chunks -----
         for sec in sections:
-            print(f"   Summarizing section: '{sec.title}' (pages {sec.start_page}-{sec.end_page})...")
             pages = list(range(sec.start_page, sec.end_page + 1))
             section_text = self._get_pages_text(doc, pages)
             section_summary = _summarize_text_block(
@@ -269,7 +281,6 @@ class DoclingProcessor:
             section_title = sec.title if sec else None
 
             image_idx += 1
-            print(f"   Verbalizing image {image_idx} (page {page_no}, section: '{section_title or 'unknown'}')...")
             verbalized = _verbalize_page_image(item.image.pil_image)
             if not verbalized.strip():
                 continue
@@ -315,56 +326,58 @@ class DoclingProcessor:
 
     def _build_section_map(self, doc) -> Tuple[List[SectionInfo], Dict[int, SectionInfo]]:
         """
-        Use Docling's iterate_items() to identify major sections and map pages to sections.
+        Identify sections from Docling headings and map each page to its section.
 
-        Heuristic:
-            - Treat heading-like items (based on their type/category) as section starts.
-            - Use the item's page_span to infer which pages belong to each section.
-            - Prefer lower 'level' values as higher-level sections.
+        Strategy:
+          - Walk all items; keep those whose type contains 'heading' or 'section'.
+          - Use prov[0].page_no (Docling's provenance) to get the heading's page.
+          - Each section starts at its heading page and ends just before the next heading.
         """
         sections: List[SectionInfo] = []
 
-        # Discover section-like headings.
+        # Collect (page_no, level, title) for every heading item.
+        headings: List[Tuple[int, int, str]] = []
+
         for item, level in doc.iterate_items():
-            title = getattr(item, "title", None) or getattr(item, "text", None)
+            title = getattr(item, "text", None) or getattr(item, "title", None)
             if not title:
                 continue
 
-            item_type = getattr(item, "category", None) or getattr(item, "kind", None)
-            if item_type is None:
-                type_name = ""
-            else:
-                type_name = str(item_type).lower()
+            item_type = getattr(item, "label", None) or getattr(item, "category", None) or getattr(item, "kind", None)
+            type_name = str(item_type).lower() if item_type is not None else ""
 
-            # Heuristic: keep items whose type mentions "heading" or "section".
             if "heading" not in type_name and "section" not in type_name:
                 continue
 
-            page_span = getattr(item, "page_span", None)
-            if page_span is None:
+            # Use provenance to get the page this heading appears on.
+            prov = getattr(item, "prov", None)
+            if not prov:
                 continue
-
-            # Different Docling versions may expose page span slightly differently.
-            start = getattr(page_span, "start", None) or getattr(page_span, "first", None)
-            end = getattr(page_span, "end", None) or getattr(page_span, "last", None)
-            if start is None and end is None:
-                continue
-            if start is None:
-                start = end
-            if end is None:
-                end = start
-
             try:
-                start_page = int(start)
-                end_page = int(end)
-            except (TypeError, ValueError):
+                page_no = int(prov[0].page_no)
+            except (IndexError, AttributeError, TypeError, ValueError):
                 continue
 
-            section_id = f"sec_{len(sections) + 1}"
+            headings.append((page_no, level, title.strip()))
+
+        if not headings:
+            return [], {}
+
+        total_pages = len(doc.pages)
+
+        # Each section runs from its heading page to the page before the next heading.
+        for i, (start_page, level, title) in enumerate(headings):
+            if i + 1 < len(headings):
+                end_page = headings[i + 1][0] - 1
+            else:
+                end_page = total_pages
+            end_page = max(end_page, start_page)
+
+            section_id = f"sec_{i + 1}"
             sections.append(
                 SectionInfo(
                     section_id=section_id,
-                    title=title.strip(),
+                    title=title,
                     level=level,
                     start_page=start_page,
                     end_page=end_page,
