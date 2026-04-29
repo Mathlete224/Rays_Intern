@@ -7,7 +7,7 @@ import { useChatStore } from '../store/chatStore';
 import { useFilterStore } from '../store/filterStore';
 
 export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }) {
-  const { documents, loading, fetchDocuments, upload, remove } = useDocumentStore();
+  const { documents, loading, fetchDocuments, upload, remove, highlightedIds } = useDocumentStore();
   const { savedCanvases, fetchSavedCanvases, loadCanvas, removeCanvas, newCanvas } = useCanvasStore();
   const { sessions, activeSessionId, newSession, deleteSession, setActiveSession, renameSession } = useChatStore();
   const {
@@ -51,14 +51,20 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
     }
   }
 
-  // Client-side filter for the document list
-  const filteredDocs = documents.filter(doc => {
-    if (company && !doc.sender_company?.toLowerCase().includes(company.toLowerCase())) return false;
-    if (author && !doc.sender_name?.toLowerCase().includes(author.toLowerCase())) return false;
-    if (writtenDateFrom && doc.written_date && doc.written_date < writtenDateFrom) return false;
-    if (writtenDateTo && doc.written_date && doc.written_date > writtenDateTo) return false;
-    return true;
-  });
+  // Client-side filter + sort highlighted docs to the top
+  const filteredDocs = documents
+    .filter(doc => {
+      if (company && !doc.sender_company?.toLowerCase().includes(company.toLowerCase())) return false;
+      if (author && !doc.sender_name?.toLowerCase().includes(author.toLowerCase())) return false;
+      if (writtenDateFrom && doc.written_date && doc.written_date < writtenDateFrom) return false;
+      if (writtenDateTo && doc.written_date && doc.written_date > writtenDateTo) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      const aHighlighted = highlightedIds.includes(a.id) ? 0 : 1;
+      const bHighlighted = highlightedIds.includes(b.id) ? 0 : 1;
+      return aHighlighted - bHighlighted;
+    });
 
   const count = activeCount();
 
@@ -215,7 +221,11 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
               {filteredDocs.map(doc => (
                 <li
                   key={doc.id}
-                  className="flex items-start justify-between gap-1 bg-white rounded-lg px-2 py-1.5 text-xs border border-gray-100"
+                  className={`flex items-start justify-between gap-1 rounded-lg px-2 py-1.5 text-xs border transition-colors ${
+                    highlightedIds.includes(doc.id)
+                      ? 'bg-blue-50 border-blue-400'
+                      : 'bg-white border-gray-100'
+                  }`}
                 >
                   <div className="min-w-0">
                     <p className="font-medium text-gray-700 truncate" title={doc.filename}>

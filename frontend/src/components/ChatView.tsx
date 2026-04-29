@@ -8,7 +8,7 @@ import type { ChunkRef } from '../types';
 
 export function ChatView() {
   const { sessions, activeSessionId, activeSession, newSession, addMessage } = useChatStore();
-  const { documents, fetchDocuments } = useDocumentStore();
+  const { documents, fetchDocuments, setHighlightedIds } = useDocumentStore();
   const {
     company, author, writtenDateFrom, writtenDateTo,
     setCompany, setAuthor, setWrittenDateFrom, setWrittenDateTo,
@@ -64,6 +64,8 @@ export function ChatView() {
         written_date_from: writtenDateFrom || undefined,
         written_date_to: writtenDateTo || undefined,
       });
+      const usedDocIds = [...new Set(result.chunks_used.map(c => c.document_id))];
+      setHighlightedIds(usedDocIds);
       addMessage(sessionId, {
         id: `${Date.now() + 1}`,
         role: 'assistant',
