@@ -245,22 +245,37 @@ class GeminiRAGPipeline:
         context = self._build_context(chunks)
 
         system = (
-            "You are a financial analysis assistant. Use ONLY the provided context "
-            "(original document content from reports) to answer. If the answer is not "
-            "derivable from the context, say you don't know.\n"
-            "Each chunk in the context has a 'source:' line indicating the filename and page. "
-            "When citing information, reference ONLY those exact filenames and page numbers — "
-            "do not invent or guess document names."
+            "You are a financial analysis assistant. Your answers must be grounded exclusively "
+            "in the provided document context below — never in your training knowledge.\n\n"
+            "Rules:\n"
+            "1. Every specific claim (numbers, dates, company actions, prices, forecasts) "
+            "must be directly supported by the context. Cite the source filename and page "
+            "for each such claim.\n"
+            "2. You MAY reason, synthesize, and identify trends across the provided chunks — "
+            "but only from what the documents actually say. Drawing a conclusion like "
+            "'revenue has trended upward across these reports' is allowed if the chunks support it.\n"
+            "3. You may NOT use general industry knowledge, assumptions, or facts from your "
+            "training data to fill gaps. If the context does not contain enough information "
+            "to support a claim, say so explicitly: 'The provided documents do not state...'\n"
+            "4. If the question cannot be answered at all from the context, say: "
+            "'The uploaded documents do not contain sufficient information to answer this question.'\n"
+            "5. Do not invent or guess document names, page numbers, or figures.\n\n"
+            "Each chunk has a 'source:' line with the filename and page — use these for citations."
         )
         prompt = (
             f"{system}\n\nContext:\n{context}\n\n"
             f"Question: {question}\n\n"
-            f"Answer clearly, citing the filename and page from the 'source:' field when relevant."
+            "Answer clearly. For every specific fact cite (filename, page). "
+            "For synthesized conclusions, note which documents they are drawn from."
         )
 
         for attempt in range(4):
             try:
-                response = self.client.models.generate_content(model=GENERATION_MODEL, contents=prompt)
+                response = self.client.models.generate_content(
+                    model=GENERATION_MODEL,
+                    contents=prompt,
+                    config={"temperature": 0},
+                )
                 break
             except google.api_core.exceptions.ResourceExhausted:
                 if attempt == 3:

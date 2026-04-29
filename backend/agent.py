@@ -79,7 +79,7 @@ class ResearchAgent:
             "Example: [\"What was revenue in Q3?\", \"What are the main risk factors?\"]"
         )
 
-        response = self.client.models.generate_content(model=DECOMPOSE_MODEL, contents=prompt)
+        response = self.client.models.generate_content(model=DECOMPOSE_MODEL, contents=prompt, config={"temperature": 0})
         raw = response.text.strip() if hasattr(response, "text") else str(response).strip()
 
         # Strip markdown code fences if present
@@ -121,5 +121,5 @@ class ResearchAgent:
             "Write the synthesis report:"
         )
 
-        response = self.client.models.generate_content(model=SYNTHESIS_MODEL, contents=prompt)
+        response = self.client.models.generate_content(model=SYNTHESIS_MODEL, contents=prompt, config={"temperature": 0})
         return response.text.strip() if hasattr(response, "text") else str(response).strip()
