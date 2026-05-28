@@ -37,9 +37,15 @@ def _get_client(api_key: Optional[str] = None) -> genai.Client:
 
 def _generate_with_retry(client: genai.Client, model: str, contents, max_attempts: int = 5):
     """Call generate_content with exponential backoff on 429 errors."""
+    # Disable thinking for 2.5 Flash — these are straightforward extraction/summarization
+    # tasks that don't benefit from chain-of-thought reasoning. Thinking adds several
+    # seconds of latency to every call; disabling it gives ~3–5× speedup per call.
+    config = types.GenerateContentConfig(
+        thinking_config=types.ThinkingConfig(thinking_budget=0),
+    )
     for attempt in range(max_attempts):
         try:
-            return client.models.generate_content(model=model, contents=contents)
+            return client.models.generate_content(model=model, contents=contents, config=config)
         except Exception as e:
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 if attempt == max_attempts - 1:
@@ -213,16 +219,16 @@ def _extract_document_metadata(text: str) -> Dict:
             return _METADATA_DEFAULTS.copy()
 
     # Use a larger head excerpt — titles, tickers, and coverage dates are usually upfront.
-    result = _run_extraction(text[:4000])
+    result = _run_extraction(text[:8000])
 
-    # If core identity fields are still missing, retry with the document tail.
-    # (Sender name / company / date sometimes appear only in email footers.)
-    identity_fields = ("sender_name", "sender_company", "sent_date")
-    if not all(result.get(k) for k in identity_fields):
-        tail = text[-2000:] if len(text) > 4000 else ""
+    # If any key fields are still missing, retry with the document tail.
+    # Sender info sometimes appears only in footers; tickers can appear after a long preamble.
+    retry_fields = ("sender_name", "sender_company", "sent_date", "tickers")
+    if not all(result.get(k) for k in retry_fields):
+        tail = text[-3000:] if len(text) > 8000 else ""
         if tail:
             tail_result = _run_extraction(tail)
-            for key in identity_fields:
+            for key in retry_fields:
                 if not result.get(key) and tail_result.get(key):
                     result[key] = tail_result[key]
 
@@ -244,11 +250,12 @@ class DoclingProcessor:
     Produces one verbalized page per row.
     """
 
-    def __init__(self, gemini_api_key: Optional[str] = None, max_workers: int = 8):
+    def __init__(self, gemini_api_key: Optional[str] = None, max_workers: int = 4):
         self.gemini_api_key = gemini_api_key or os.getenv("GEMINI_API_KEY")
         # Max concurrent Gemini calls per PDF (images + section summaries).
-        # Free-tier Gemini Flash: ~15 RPM → keep at 4–6 to avoid excessive retries.
-        # Paid-tier Gemini Flash: 1 000+ RPM → 8 is comfortably safe.
+        # Keep this low when processing multiple PDFs at once — the effective
+        # total concurrency is (directory_workers × max_workers). At 2 PDFs × 4
+        # workers = 8 concurrent calls, which is well within Gemini Flash limits.
         self.max_workers = max_workers
 
         pipeline_options = PdfPipelineOptions()
@@ -300,9 +307,10 @@ class DoclingProcessor:
         with ThreadPoolExecutor(max_workers=2) as ex:
             fut_meta = ex.submit(_extract_document_metadata, full_markdown)
             fut_doc_summary = ex.submit(_summarize_text_block, full_markdown, "whole document")
-            doc_metadata = fut_meta.result()
+            extracted_meta = fut_meta.result()   # tickers, sector, report_type, etc.
             doc_summary = fut_doc_summary.result()
-        doc_metadata = {
+
+        chunk_doc_metadata = {
             "level": "document",
             "section_id": None,
             "section_title": None,
@@ -315,7 +323,7 @@ class DoclingProcessor:
                 {
                     "raw_content": full_markdown or doc_summary or "[Document summary]",
                     "verbalized_summary": doc_summary or None,
-                    "metadata": doc_metadata,
+                    "metadata": chunk_doc_metadata,
                 }
             )
 
@@ -412,7 +420,7 @@ class DoclingProcessor:
                     }
                 )
 
-        return chunks, total_doc_pages, file_size_bytes, doc_metadata
+        return chunks, total_doc_pages, file_size_bytes, extracted_meta
 
     def _get_page_text(self, doc, page_no: int) -> str:
         """Extract text for a single page from Docling document, if available."""

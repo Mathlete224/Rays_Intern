@@ -261,7 +261,8 @@ class DatabaseManager:
                 q = q.filter(
                     PDFDocument.tickers.is_(None) |
                     PDFDocument.report_type.is_(None) |
-                    PDFDocument.asset_class.is_(None)
+                    PDFDocument.asset_class.is_(None) |
+                    PDFDocument.sector.is_(None)
                 )
             return q.all()
         finally:
@@ -506,11 +507,20 @@ class DatabaseManager:
                 q = q.filter(PDFDocument.asset_class == asset_class)
             if coverage_period_from is not None or coverage_period_to is not None:
                 # Overlap: doc's coverage window must intersect the requested range.
-                # Condition: doc.from <= requested_to  AND  doc.to >= requested_from
+                # Documents with NULL coverage_period are treated as "unknown" and included
+                # rather than excluded — semantic search will determine their relevance.
+                # Condition: (doc.to IS NULL OR doc.to >= requested_from)
+                #        AND (doc.from IS NULL OR doc.from <= requested_to)
                 if coverage_period_from is not None:
-                    q = q.filter(PDFDocument.coverage_period_to >= coverage_period_from)
+                    q = q.filter(
+                        PDFDocument.coverage_period_to.is_(None) |
+                        (PDFDocument.coverage_period_to >= coverage_period_from)
+                    )
                 if coverage_period_to is not None:
-                    q = q.filter(PDFDocument.coverage_period_from <= coverage_period_to)
+                    q = q.filter(
+                        PDFDocument.coverage_period_from.is_(None) |
+                        (PDFDocument.coverage_period_from <= coverage_period_to)
+                    )
 
             if similarity_threshold > 0.0:
                 q = q.filter(distance_col <= (1.0 - similarity_threshold))

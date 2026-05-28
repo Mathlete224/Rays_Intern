@@ -42,6 +42,7 @@ EMBEDDING_DIMS = 768  # must match Vector(768) in database.py
 
 
 def embed_text(text: str) -> List[float]:
+    """Embed a single text string. Returns [] if text is empty."""
     if not text.strip():
         return []
     client = _get_client()
@@ -51,6 +52,28 @@ def embed_text(text: str) -> List[float]:
         config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMS),
     )
     return list(result.embeddings[0].values)
+
+
+def embed_texts_batch(texts: List[str]) -> List[List[float]]:
+    """Embed a batch of texts in a single API call. Returns a parallel list of vectors.
+    Empty-string inputs get an empty list back; all others are embedded together."""
+    if not texts:
+        return []
+    client = _get_client()
+    # Track which indices have actual content so we can skip empty strings.
+    indexed = [(i, t) for i, t in enumerate(texts) if t.strip()]
+    if not indexed:
+        return [[] for _ in texts]
+    indices, non_empty = zip(*indexed)
+    result = client.models.embed_content(
+        model=EMBEDDING_MODEL,
+        contents=list(non_empty),
+        config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMS),
+    )
+    out: List[List[float]] = [[] for _ in texts]
+    for rank, original_idx in enumerate(indices):
+        out[original_idx] = list(result.embeddings[rank].values)
+    return out
 
 
 @dataclass
@@ -89,7 +112,11 @@ class GeminiRAGPipeline:
         batch_size: int = 64,
         max_batches: Optional[int] = None,
     ) -> int:
-        """Generate embeddings from verbalized_summary for chunks that don't have them."""
+        """Generate embeddings for chunks that don't have them yet.
+
+        Embeds an entire batch in a single API call instead of one call per chunk,
+        cutting embedding time from O(n) round-trips to O(n/batch_size) round-trips.
+        """
         total = 0
         batches = 0
 
@@ -100,15 +127,19 @@ class GeminiRAGPipeline:
             chunks = self.db.get_chunks_without_embedding(limit=batch_size)
             if not chunks:
                 break
-            for chunk in chunks:
-                text = (
+
+            texts = [
+                (
                     (chunk.raw_content or "") +
                     "\n\n" +
                     (chunk.verbalized_summary or "")
                 ).strip()
-                if not text:
-                    continue
-                emb = embed_text(text)
+                for chunk in chunks
+            ]
+
+            embeddings = embed_texts_batch(texts)
+
+            for chunk, emb in zip(chunks, embeddings):
                 if emb:
                     self.db.upsert_chunk_embedding(chunk.id, emb)
                     total += 1
@@ -203,9 +234,13 @@ Given the conversation history and current question, return a JSON object with e
    - "asset_class": asset class if specified — one of: equity, crypto, fixed_income,
      commodity, fx, mixed — or null
    - "coverage_period_from": ISO date for the START of the period being ANALYSED
-     (not when published). Use for queries about earnings, quarterly performance, etc.
-     e.g. "Q3 2024 performance" → 2024-07-01. Or null.
+     (not when published). Set ONLY when the user wants documents specifically scoped
+     to that period (e.g. "show me Q3 2024 reports", "SinoPac Q1 earnings").
+     Do NOT set for broad trend/knowledge questions like "what happened in Q1 2025?" —
+     include the period in standalone_query instead so semantic search finds it.
+     e.g. "SinoPac Q3 2024 earnings" → 2024-07-01. Or null.
    - "coverage_period_to": ISO date for the END of the period being ANALYSED. Or null.
+     Same rule: only set when scoping to a specific period, not for general questions.
 
    Quarter mapping: Q1=Jan 1–Mar 31, Q2=Apr 1–Jun 30, Q3=Jul 1–Sep 30, Q4=Oct 1–Dec 31.
    If a quarter is mentioned without a year, infer from context or use today's year.
