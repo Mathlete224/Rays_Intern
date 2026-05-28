@@ -11,6 +11,7 @@ import json
 import os
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -75,7 +76,8 @@ def _verbalize_page_image(pil_image, model_name: str = VERBALIZE_MODEL) -> str:
         client, model_name,
         [prompt, types.Part.from_bytes(data=buf.getvalue(), mime_type="image/png")],
     )
-    return response.text if hasattr(response, "text") else str(response)
+    # response.text can be None if the model response was blocked or empty
+    return (response.text or "") if hasattr(response, "text") else str(response)
 
 
 def _summarize_text_block(text: str, purpose: str) -> str:
@@ -102,52 +104,126 @@ def _summarize_text_block(text: str, purpose: str) -> str:
         text = text[:20000]
 
     response = _generate_with_retry(client, TEXT_SUMMARY_MODEL, [prompt, text])
-    return response.text if hasattr(response, "text") else str(response)
+    # response.text can be None if the model response was blocked or empty
+    return (response.text or "") if hasattr(response, "text") else str(response)
 
 
-def _extract_sender_info(text: str) -> Dict[str, Optional[str]]:
-    """Extract sender name, company, and sent date from document text using Gemini.
+_METADATA_DEFAULTS: Dict = {
+    "sender_name": None,
+    "sender_company": None,
+    "sent_date": None,
+    "tickers": None,
+    "report_type": None,
+    "sector": None,
+    "asset_class": None,
+    "coverage_period_from": None,
+    "coverage_period_to": None,
+}
 
-    Tries the first 2000 chars first, then the last 2000 chars for any fields
-    still missing (sender/date sometimes appear in email footers at the bottom).
+_REPORT_TYPES = [
+    "equity_research", "technical_analysis", "macro",
+    "crypto", "sector_note", "strategy", "other",
+]
+_ASSET_CLASSES = ["equity", "crypto", "fixed_income", "commodity", "fx", "mixed"]
+
+
+def _extract_document_metadata(text: str) -> Dict:
+    """Extract all document-level metadata from financial document text in one Gemini call.
+
+    Fields extracted:
+      sender_name, sender_company, sent_date   — who sent it and when
+      tickers          — list of primary ticker/asset symbols covered (e.g. ["BTC", "AAPL"])
+      report_type      — one of: equity_research, technical_analysis, macro,
+                         crypto, sector_note, strategy, other
+      sector           — GICS sector (e.g. "Technology", "Energy") if equity-focused
+      asset_class      — one of: equity, crypto, fixed_income, commodity, fx, mixed
+      coverage_period_from / _to  — the period being ANALYSED (not when published)
+                                    e.g. a Q3 earnings report published in November
+                                    has coverage_period = Jul–Sep, sent_date = Nov
+
+    Falls back gracefully: missing or unparseable fields are returned as null.
+    Tries the document head first; if key identity fields are still missing,
+    retries with the document tail (sender info sometimes lives in footers).
     """
     if not text.strip():
-        return {"sender_name": None, "sender_company": None, "sent_date": None}
+        return _METADATA_DEFAULTS.copy()
 
     client = _get_client()
+    report_types_str = ", ".join(_REPORT_TYPES)
+    asset_classes_str = ", ".join(_ASSET_CLASSES)
 
-    def _run_extraction(excerpt: str) -> Dict[str, Optional[str]]:
+    def _run_extraction(excerpt: str) -> Dict:
         prompt = (
-            "Extract the sender/author name, their company, and the date this document was sent/published "
-            "from this financial document excerpt. "
-            "Return ONLY valid JSON with keys \"sender_name\", \"sender_company\", and \"sent_date\". "
-            "Use null if not found. Format sent_date as YYYY-MM-DD.\n"
-            "Example: {\"sender_name\": \"John Smith\", \"sender_company\": \"Goldman Sachs\", \"sent_date\": \"2024-03-15\"}\n\n"
-            f"Document text:\n{excerpt}"
+            "You are a financial document metadata extractor. "
+            "Extract the following fields from the document excerpt below. "
+            "Return ONLY valid JSON — no markdown, no explanation.\n\n"
+            "Required JSON keys (use null for any field not found):\n"
+            "{\n"
+            '  "sender_name":          "<full name of author or sender, or null>",\n'
+            '  "sender_company":       "<publishing firm, bank, or research house, or null>",\n'
+            '  "sent_date":            "<YYYY-MM-DD when published/sent, or null>",\n'
+            '  "tickers":              ["<exchange ticker symbols, e.g. 9958 TT, AAPL, BTC. Include exchange suffix if present.>"],\n'
+            f' "report_type":          "<one of: {report_types_str} — or null>",\n'
+            '  "sector":               "<GICS sector — see definitions below — or null if not equity>",\n'
+            f' "asset_class":          "<one of: {asset_classes_str} — or null>",\n'
+            '  "coverage_period_from": "<YYYY-MM-DD start of the period this report ANALYSES, or null>",\n'
+            '  "coverage_period_to":   "<YYYY-MM-DD end   of the period this report ANALYSES, or null>"\n'
+            "}\n\n"
+            "GICS sector definitions — use EXACTLY these names:\n"
+            "• Energy: oil & gas exploration/production, refining, energy equipment, pipelines,\n"
+            "  wind/solar/renewable energy developers and operators\n"
+            "• Materials: chemicals, metals & mining, steel, paper, packaging, construction materials\n"
+            "• Industrials: aerospace & defense, machinery, construction & engineering, transportation,\n"
+            "  commercial services, electrical equipment\n"
+            "• Consumer Discretionary: retail, automotive, hotels, restaurants, media, gaming, apparel\n"
+            "• Consumer Staples: food, beverages, tobacco, household products, personal care\n"
+            "• Healthcare: pharmaceuticals, biotech, medical devices, health services\n"
+            "• Financials: banks, insurance, asset management, capital markets, real estate finance\n"
+            "• Information Technology: software, hardware, semiconductors, IT services, internet\n"
+            "• Communication Services: telecom, media, interactive media & services\n"
+            "• Utilities: electric utilities, water, gas utilities, independent power producers\n"
+            "• Real Estate: REITs, real estate management & development\n\n"
+            "Key distinctions:\n"
+            "• Wind/solar/renewable energy COMPANIES → Energy (developers/operators) or Utilities\n"
+            "  (regulated power producers). NOT Industrials or Materials.\n"
+            "• tickers: preserve the full exchange symbol as written (e.g. '9958 TT', '2881 TW').\n"
+            "• sent_date vs coverage_period: a Q3 2024 earnings report published in November 2024\n"
+            "  has sent_date=2024-11-XX, coverage_period_from=2024-07-01, coverage_period_to=2024-09-30.\n"
+            "• report_type=crypto if the PRIMARY focus is cryptocurrency.\n\n"
+            f"Document excerpt:\n{excerpt}"
         )
         try:
             response = _generate_with_retry(client, TEXT_SUMMARY_MODEL, prompt)
-            raw = response.text.strip() if hasattr(response, "text") else ""
+            raw = (response.text or "").strip() if hasattr(response, "text") else ""
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
             data = json.loads(raw)
             return {
-                "sender_name": data.get("sender_name"),
-                "sender_company": data.get("sender_company"),
-                "sent_date": data.get("sent_date"),
+                "sender_name": data.get("sender_name") or None,
+                "sender_company": data.get("sender_company") or None,
+                "sent_date": data.get("sent_date") or None,
+                "tickers": data.get("tickers") or None,
+                "report_type": data.get("report_type") or None,
+                "sector": data.get("sector") or None,
+                "asset_class": data.get("asset_class") or None,
+                "coverage_period_from": data.get("coverage_period_from") or None,
+                "coverage_period_to": data.get("coverage_period_to") or None,
             }
         except Exception:
-            return {"sender_name": None, "sender_company": None, "sent_date": None}
+            return _METADATA_DEFAULTS.copy()
 
-    result = _run_extraction(text[:2000])
+    # Use a larger head excerpt — titles, tickers, and coverage dates are usually upfront.
+    result = _run_extraction(text[:4000])
 
-    # If any fields are still missing, try the end of the document
-    if not all(result.values()):
-        tail = text[-2000:] if len(text) > 2000 else ""
+    # If core identity fields are still missing, retry with the document tail.
+    # (Sender name / company / date sometimes appear only in email footers.)
+    identity_fields = ("sender_name", "sender_company", "sent_date")
+    if not all(result.get(k) for k in identity_fields):
+        tail = text[-2000:] if len(text) > 4000 else ""
         if tail:
             tail_result = _run_extraction(tail)
-            for key in ("sender_name", "sender_company", "sent_date"):
-                if not result[key] and tail_result[key]:
+            for key in identity_fields:
+                if not result.get(key) and tail_result.get(key):
                     result[key] = tail_result[key]
 
     return result
@@ -168,8 +244,12 @@ class DoclingProcessor:
     Produces one verbalized page per row.
     """
 
-    def __init__(self, gemini_api_key: Optional[str] = None):
+    def __init__(self, gemini_api_key: Optional[str] = None, max_workers: int = 8):
         self.gemini_api_key = gemini_api_key or os.getenv("GEMINI_API_KEY")
+        # Max concurrent Gemini calls per PDF (images + section summaries).
+        # Free-tier Gemini Flash: ~15 RPM → keep at 4–6 to avoid excessive retries.
+        # Paid-tier Gemini Flash: 1 000+ RPM → 8 is comfortably safe.
+        self.max_workers = max_workers
 
         pipeline_options = PdfPipelineOptions()
         pipeline_options.generate_page_images = False
@@ -216,8 +296,12 @@ class DoclingProcessor:
         except Exception:
             full_markdown = ""
 
-        sender_info = _extract_sender_info(full_markdown)
-        doc_summary = _summarize_text_block(full_markdown, purpose="whole document")
+        # Metadata extraction and document summary are independent — run concurrently.
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            fut_meta = ex.submit(_extract_document_metadata, full_markdown)
+            fut_doc_summary = ex.submit(_summarize_text_block, full_markdown, "whole document")
+            doc_metadata = fut_meta.result()
+            doc_summary = fut_doc_summary.result()
         doc_metadata = {
             "level": "document",
             "section_id": None,
@@ -235,13 +319,35 @@ class DoclingProcessor:
                 }
             )
 
-        # ----- Section-level chunks -----
-        for sec in sections:
-            pages = list(range(sec.start_page, sec.end_page + 1))
-            section_text = self._get_pages_text(doc, pages)
-            section_summary = _summarize_text_block(
-                section_text, purpose=f"section '{sec.title}'"
-            )
+        # ----- Section-level chunks (parallelized) -----
+        # Extract page texts first (fast, CPU-only), then fire all Gemini calls concurrently.
+        section_data = [
+            (sec, self._get_pages_text(doc, list(range(sec.start_page, sec.end_page + 1))))
+            for sec in sections
+        ]
+
+        section_summaries: Dict[str, str] = {}
+        if section_data:
+            workers = min(self.max_workers, len(section_data))
+            with ThreadPoolExecutor(max_workers=workers) as ex:
+                future_to_sec = {
+                    ex.submit(_summarize_text_block, text, f"section '{sec.title}'"): sec
+                    for sec, text in section_data
+                }
+                for fut in as_completed(future_to_sec):
+                    sec = future_to_sec[fut]
+                    try:
+                        section_summaries[sec.section_id] = fut.result()
+                    except Exception as e:
+                        print(f"   [WARNING] Section summary failed for '{sec.title}': {e}")
+                        section_summaries[sec.section_id] = ""
+
+        # Assemble section chunks in original document order
+        for sec, text in section_data:
+            summary = section_summaries.get(sec.section_id, "")
+            content_for_storage = text if text.strip() else summary
+            if not content_for_storage.strip():
+                continue
             metadata = {
                 "level": "section",
                 "section_id": sec.section_id,
@@ -250,57 +356,63 @@ class DoclingProcessor:
                 "page_span": [sec.start_page, sec.end_page],
                 "file_path": str(pdf_path.absolute()),
             }
-            content_for_storage = section_text if section_text.strip() else section_summary
-            if not content_for_storage.strip():
-                # Skip empty sections entirely
-                continue
             chunks.append(
                 {
                     "raw_content": content_for_storage,
-                    "verbalized_summary": section_summary or None,
+                    "verbalized_summary": summary or None,
                     "metadata": metadata,
                 }
             )
 
-        # ----- Image-level chunks -----
-        image_idx = 0
+        # ----- Image-level chunks (parallelized) -----
+        # Collect all images with provenance first, then verbalize all concurrently.
+        image_items = []
         for item, _ in doc.iterate_items():
             if not isinstance(item, PictureItem):
                 continue
             if item.image is None or item.image.pil_image is None:
                 continue
-
-            # Determine which page this image is on
-            page_no = None
-            if item.prov:
-                page_no = item.prov[0].page_no
-
-            # Look up parent section via page number
+            page_no = item.prov[0].page_no if item.prov else None
             sec = page_to_section.get(page_no) if page_no else None
-            section_id = sec.section_id if sec else None
-            section_title = sec.title if sec else None
+            image_items.append((item.image.pil_image, page_no, sec))
 
-            image_idx += 1
-            verbalized = _verbalize_page_image(item.image.pil_image)
-            if not verbalized.strip():
-                continue
-            metadata = {
-                "level": "image",
-                "image_index": image_idx,
-                "page_number": page_no,
-                "section_id": section_id,
-                "section_title": section_title,
-                "file_path": str(pdf_path.absolute()),
-            }
-            chunks.append(
-                {
-                    "raw_content": verbalized,
-                    "verbalized_summary": verbalized,
-                    "metadata": metadata,
+        if image_items:
+            verbalized_results: Dict[int, str] = {}
+            workers = min(self.max_workers, len(image_items))
+            with ThreadPoolExecutor(max_workers=workers) as ex:
+                future_to_idx: Dict = {}
+                for i, (pil_image, _page_no, _sec) in enumerate(image_items):
+                    future_to_idx[ex.submit(_verbalize_page_image, pil_image)] = i
+                for fut in as_completed(future_to_idx):
+                    i = future_to_idx[fut]
+                    try:
+                        verbalized_results[i] = fut.result()
+                    except Exception as e:
+                        print(f"   [WARNING] Image verbalization failed (image {i + 1}): {e}")
+                        verbalized_results[i] = ""
+
+            # Assemble image chunks in original document order
+            for i, (_pil, page_no, sec) in enumerate(image_items):
+                verbalized = verbalized_results.get(i, "")
+                if not verbalized.strip():
+                    continue
+                metadata = {
+                    "level": "image",
+                    "image_index": i + 1,
+                    "page_number": page_no,
+                    "section_id": sec.section_id if sec else None,
+                    "section_title": sec.title if sec else None,
+                    "file_path": str(pdf_path.absolute()),
                 }
-            )
+                chunks.append(
+                    {
+                        "raw_content": verbalized,
+                        "verbalized_summary": verbalized,
+                        "metadata": metadata,
+                    }
+                )
 
-        return chunks, total_doc_pages, file_size_bytes, sender_info
+        return chunks, total_doc_pages, file_size_bytes, doc_metadata
 
     def _get_page_text(self, doc, page_no: int) -> str:
         """Extract text for a single page from Docling document, if available."""

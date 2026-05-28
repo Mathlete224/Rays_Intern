@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Sequence
 
 from sqlalchemy import (
+    cast,
     Column,
     Date,
     DateTime,
@@ -17,6 +18,8 @@ from sqlalchemy import (
     String,
     Text,
     create_engine,
+    func,
+    or_,
     text,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -42,6 +45,15 @@ class PDFDocument(Base):
     sender_company = Column(String(500), nullable=True)
     sent_date = Column(Date, nullable=True)
     written_date = Column(Date, nullable=True)
+
+    # Extended metadata — extracted by Gemini during ingestion
+    tickers = Column(JSONB, nullable=True)               # ["BTC", "AAPL"]
+    report_type = Column(String(100), nullable=True)     # "equity_research" | "technical_analysis" | …
+    sector = Column(String(200), nullable=True)          # GICS sector, e.g. "Technology"
+    asset_class = Column(String(100), nullable=True)     # "equity" | "crypto" | "fixed_income" | …
+    coverage_period_from = Column(Date, nullable=True)   # Start of the period being analysed
+    coverage_period_to = Column(Date, nullable=True)     # End of the period being analysed
+
     uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     processed_at = Column(DateTime, nullable=True)
 
@@ -105,11 +117,17 @@ class DatabaseManager:
 
         if database_url.startswith("postgresql"):
             with self.engine.connect() as conn:
-                # Schema migrations — always safe
+                # Schema migrations — always safe (idempotent IF NOT EXISTS)
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_name VARCHAR(500)"))
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sender_company VARCHAR(500)"))
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sent_date DATE"))
                 conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS written_date DATE"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS tickers JSONB"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS report_type VARCHAR(100)"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS sector VARCHAR(200)"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS asset_class VARCHAR(100)"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS coverage_period_from DATE"))
+                conn.execute(text("ALTER TABLE pdf_documents ADD COLUMN IF NOT EXISTS coverage_period_to DATE"))
                 conn.commit()
 
             # pgvector index — requires the vector extension; skip gracefully if not installed
@@ -139,6 +157,12 @@ class DatabaseManager:
         sender_name: Optional[str] = None,
         sender_company: Optional[str] = None,
         sent_date=None,
+        tickers=None,
+        report_type: Optional[str] = None,
+        sector: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        coverage_period_from=None,
+        coverage_period_to=None,
     ) -> PDFDocument:
         session = self.get_session()
         try:
@@ -151,6 +175,12 @@ class DatabaseManager:
                 sender_name=sender_name,
                 sender_company=sender_company,
                 sent_date=sent_date,
+                tickers=tickers,
+                report_type=report_type,
+                sector=sector,
+                asset_class=asset_class,
+                coverage_period_from=coverage_period_from,
+                coverage_period_to=coverage_period_to,
             )
             session.add(doc)
             session.commit()
@@ -168,6 +198,94 @@ class DatabaseManager:
             return session.query(PDFDocument).filter_by(file_hash=file_hash).first()
         finally:
             session.close()
+    def update_document_metadata(
+        self,
+        document_id: int,
+        tickers=None,
+        report_type: Optional[str] = None,
+        sector: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        coverage_period_from=None,
+        coverage_period_to=None,
+        sender_name: Optional[str] = None,
+        sender_company: Optional[str] = None,
+        sent_date=None,
+    ) -> bool:
+        """Update extended metadata fields for an existing document.
+        Only overwrites a field if the supplied value is not None, so calling this
+        with a partial result won't blank out fields already populated.
+        Returns True if the document was found, False otherwise.
+        """
+        session = self.get_session()
+        try:
+            doc = session.query(PDFDocument).filter_by(id=document_id).first()
+            if not doc:
+                return False
+            if tickers is not None:
+                doc.tickers = tickers
+            if report_type is not None:
+                doc.report_type = report_type
+            if sector is not None:
+                doc.sector = sector
+            if asset_class is not None:
+                doc.asset_class = asset_class
+            if coverage_period_from is not None:
+                doc.coverage_period_from = coverage_period_from
+            if coverage_period_to is not None:
+                doc.coverage_period_to = coverage_period_to
+            if sender_name is not None:
+                doc.sender_name = sender_name
+            if sender_company is not None:
+                doc.sender_company = sender_company
+            if sent_date is not None:
+                doc.sent_date = sent_date
+            session.commit()
+            return True
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def get_documents_missing_metadata(self, force: bool = False) -> List[PDFDocument]:
+        """Return documents that need metadata extraction.
+
+        Args:
+            force: If True, return ALL documents regardless of whether metadata
+                   is already populated (useful for re-running with an improved prompt).
+        """
+        session = self.get_session()
+        try:
+            q = session.query(PDFDocument).order_by(PDFDocument.id)
+            if not force:
+                q = q.filter(
+                    PDFDocument.tickers.is_(None) |
+                    PDFDocument.report_type.is_(None) |
+                    PDFDocument.asset_class.is_(None)
+                )
+            return q.all()
+        finally:
+            session.close()
+
+    def get_document_chunk_text(self, document_id: int) -> str:
+        """Return the raw_content of the document-level chunk (level=document).
+        This is the full Docling markdown, usable for metadata re-extraction
+        without re-parsing the original PDF file.
+        """
+        session = self.get_session()
+        try:
+            chunk = (
+                session.query(PDFChunk)
+                .filter(
+                    PDFChunk.document_id == document_id,
+                    PDFChunk.metadata_["level"].astext == "document",
+                )
+                .first()
+            )
+            return (chunk.raw_content or "") if chunk else ""
+        finally:
+            session.close()
+
     def add_chunks(self, document_id: int, chunks: List[dict]) -> List[uuid.UUID]:
         """
         Add chunks for a document. Returns list of chunk IDs (in same order as chunks).
@@ -322,6 +440,12 @@ class DatabaseManager:
         sender_companies: Optional[Sequence[str]] = None,
         written_date_from=None,
         written_date_to=None,
+        tickers: Optional[Sequence[str]] = None,
+        report_type: Optional[str] = None,
+        sector: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        coverage_period_from=None,
+        coverage_period_to=None,
         similarity_threshold: float = 0.0,
     ) -> List[PDFChunk]:
         """Vector search over verbalized_summary embeddings.
@@ -330,6 +454,11 @@ class DatabaseManager:
             similarity_threshold: Minimum cosine similarity (0–1) a chunk must score
                 to be returned. Cosine distance = 1 − similarity, so a threshold of
                 0.4 discards anything with distance > 0.6. Defaults to 0.0 (no filter).
+            tickers: Return only chunks from documents whose tickers array contains
+                any of the given ticker symbols (OR logic).
+            coverage_period_from/to: Overlap filter — returns documents whose coverage
+                period overlaps the requested range. A document covering Jan–Mar will
+                NOT match a Jul–Sep query.
         """
         session = self.get_session()
         try:
@@ -350,10 +479,39 @@ class DatabaseManager:
                 q = q.filter(PDFDocument.sender_name.in_(sender_names))
             if sender_companies:
                 q = q.filter(PDFDocument.sender_company.in_(sender_companies))
-            if written_date_from is not None:
-                q = q.filter(PDFDocument.written_date >= written_date_from)
-            if written_date_to is not None:
-                q = q.filter(PDFDocument.written_date <= written_date_to)
+            if written_date_from is not None or written_date_to is not None:
+                # Use COALESCE(written_date, sent_date) so documents where only
+                # sent_date is populated (the common case from the ingestion pipeline)
+                # are still matched by date filters.
+                effective_date = func.coalesce(PDFDocument.written_date, PDFDocument.sent_date)
+                if written_date_from is not None:
+                    q = q.filter(effective_date >= written_date_from)
+                if written_date_to is not None:
+                    q = q.filter(effective_date <= written_date_to)
+
+            # ── Extended metadata filters ──────────────────────────────────────
+            if tickers:
+                # Partial text match: cast the JSONB array to text and use ILIKE.
+                # This means "9958" matches "9958 TT", "BTC" matches "BTC" or "XBTC", etc.
+                # OR logic across all requested tickers.
+                q = q.filter(or_(*[
+                    cast(PDFDocument.tickers, Text).ilike(f"%{t}%")
+                    for t in tickers
+                ]))
+            if report_type:
+                q = q.filter(PDFDocument.report_type == report_type)
+            if sector:
+                q = q.filter(PDFDocument.sector.ilike(f"%{sector}%"))
+            if asset_class:
+                q = q.filter(PDFDocument.asset_class == asset_class)
+            if coverage_period_from is not None or coverage_period_to is not None:
+                # Overlap: doc's coverage window must intersect the requested range.
+                # Condition: doc.from <= requested_to  AND  doc.to >= requested_from
+                if coverage_period_from is not None:
+                    q = q.filter(PDFDocument.coverage_period_to >= coverage_period_from)
+                if coverage_period_to is not None:
+                    q = q.filter(PDFDocument.coverage_period_from <= coverage_period_to)
+
             if similarity_threshold > 0.0:
                 q = q.filter(distance_col <= (1.0 - similarity_threshold))
 

@@ -7,6 +7,7 @@ for easy DB lookup in the RAG pipeline.
 """
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import List, Optional
 import uuid as uuid_lib
@@ -20,6 +21,7 @@ class PDFSummarizerPipeline:
     """Parse PDFs with Docling, verbalize charts with Gemini, store in Postgres."""
 
     def __init__(self, database_url: str = "sqlite:///pdf_summarizer.db"):
+        self._database_url = database_url
         self.db_manager = DatabaseManager(database_url)
         self.processor = DoclingProcessor()
         self.rag = GeminiRAGPipeline(db=self.db_manager)
@@ -28,6 +30,7 @@ class PDFSummarizerPipeline:
         self,
         pdf_path: str,
         skip_existing: bool = True,
+        skip_embeddings: bool = False,
     ) -> dict:
         """
         Process a single PDF: Docling parse → Gemini verbalize → store pages.
@@ -49,7 +52,7 @@ class PDFSummarizerPipeline:
         try:
             print(f"📄 Processing: {filename}")
 
-            chunks, total_pages, file_size_bytes, sender_info = self.processor.process_pdf(str(pdf_path))
+            chunks, total_pages, file_size_bytes, doc_metadata = self.processor.process_pdf(str(pdf_path))
 
             doc = self.db_manager.add_document(
                 filename=filename,
@@ -57,16 +60,23 @@ class PDFSummarizerPipeline:
                 total_pages=total_pages,
                 file_size_bytes=file_size_bytes,
                 file_hash=file_hash,
-                sender_name=sender_info.get("sender_name"),
-                sender_company=sender_info.get("sender_company"),
-                sent_date=sender_info.get("sent_date"),
+                sender_name=doc_metadata.get("sender_name"),
+                sender_company=doc_metadata.get("sender_company"),
+                sent_date=doc_metadata.get("sent_date"),
+                tickers=doc_metadata.get("tickers"),
+                report_type=doc_metadata.get("report_type"),
+                sector=doc_metadata.get("sector"),
+                asset_class=doc_metadata.get("asset_class"),
+                coverage_period_from=doc_metadata.get("coverage_period_from"),
+                coverage_period_to=doc_metadata.get("coverage_period_to"),
             )
 
             chunk_ids = self.db_manager.add_chunks(doc.id, chunks)
             self._set_parent_sibling_metadata(chunk_ids, chunks)
 
-            print(f"   Generating embeddings...")
-            self.rag.backfill_embeddings()
+            if not skip_embeddings:
+                print(f"   Generating embeddings...")
+                self.rag.backfill_embeddings()
 
             print(f"✅ Done: {filename}")
             print(f"   Pages: {total_pages}")
@@ -88,8 +98,18 @@ class PDFSummarizerPipeline:
         self,
         directory_path: str,
         skip_existing: bool = True,
+        max_workers: int = 4,
     ) -> dict:
-        """Process all PDFs in a directory."""
+        """Process all PDFs in a directory, up to max_workers PDFs at a time.
+
+        Each worker creates its own pipeline instance (DoclingProcessor is not
+        guaranteed thread-safe).  Embeddings are backfilled in a single batch
+        after all PDFs are ingested rather than once per file.
+
+        Args:
+            max_workers: Number of PDFs to process concurrently.  Defaults to 4.
+                         Set to 1 to restore sequential behaviour.
+        """
         directory = Path(directory_path)
         if not directory.exists():
             raise FileNotFoundError(f"Directory not found: {directory_path}")
@@ -99,7 +119,7 @@ class PDFSummarizerPipeline:
             print(f"⚠️  No PDFs in {directory_path}")
             return {"status": "no_files", "total_files": 0}
 
-        print(f"📁 Found {len(pdf_files)} PDF(s) in {directory_path}\n")
+        print(f"📁 Found {len(pdf_files)} PDF(s) in {directory_path} (max_workers={max_workers})\n")
 
         results = {
             "total_files": len(pdf_files),
@@ -109,17 +129,116 @@ class PDFSummarizerPipeline:
             "results": [],
         }
 
-        for pdf_file in pdf_files:
-            r = self.process_single_pdf(str(pdf_file), skip_existing=skip_existing)
-            results["results"].append(r)
-            if r["status"] == "success":
-                results["successful"] += 1
-            elif r["status"] == "error":
-                results["failed"] += 1
-            elif r["status"] == "skipped":
-                results["skipped"] += 1
+        database_url = self._database_url
+
+        def _process_one(pdf_file: Path) -> dict:
+            # Own pipeline instance per thread to avoid DoclingProcessor sharing issues.
+            p = PDFSummarizerPipeline(database_url=database_url)
+            return p.process_single_pdf(
+                str(pdf_file),
+                skip_existing=skip_existing,
+                skip_embeddings=True,   # single backfill pass at the end
+            )
+
+        workers = min(max_workers, len(pdf_files))
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            future_to_file = {ex.submit(_process_one, f): f for f in pdf_files}
+            for fut in as_completed(future_to_file):
+                pdf_file = future_to_file[fut]
+                try:
+                    r = fut.result()
+                except Exception as e:
+                    r = {"status": "error", "filename": pdf_file.name, "error": str(e)}
+                results["results"].append(r)
+                if r["status"] == "success":
+                    results["successful"] += 1
+                elif r["status"] == "error":
+                    results["failed"] += 1
+                    print(f"❌ Error processing {pdf_file.name}: {r.get('error')}")
+                elif r["status"] == "skipped":
+                    results["skipped"] += 1
+
+        # Single embedding backfill pass after all PDFs have been ingested.
+        if results["successful"] > 0:
+            print(f"\n📐 Generating embeddings for all new chunks…")
+            self.rag.backfill_embeddings()
 
         print(f"\n📊 Summary: {results['successful']} ok, {results['failed']} failed, {results['skipped']} skipped")
+        return results
+
+    def backfill_document_metadata(self, max_workers: int = 4, force: bool = False) -> dict:
+        """Re-extract extended metadata (tickers, report_type, sector, asset_class,
+        coverage_period) for documents that are missing it, using the already-stored
+        document-level chunk text.  No re-ingestion, no Docling, no embeddings —
+        just one Gemini Flash call per document.
+
+        Returns a summary dict with counts of updated / skipped / failed documents.
+        """
+        from pdf_processor import _extract_document_metadata
+        from datetime import date as date_cls
+
+        docs = self.db_manager.get_documents_missing_metadata(force=force)
+        if not docs:
+            print("✅ All documents already have extended metadata — nothing to do.")
+            return {"total": 0, "updated": 0, "skipped": 0, "failed": 0}
+
+        print(f"📋 Found {len(docs)} document(s) missing extended metadata.\n")
+
+        results = {"total": len(docs), "updated": 0, "skipped": 0, "failed": 0}
+
+        def _parse_date(value):
+            if value is None:
+                return None
+            if isinstance(value, date_cls):
+                return value
+            try:
+                return date_cls.fromisoformat(str(value))
+            except (ValueError, TypeError):
+                return None
+
+        def _process_one(doc) -> str:
+            """Returns 'updated', 'skipped', or 'failed'."""
+            text = self.db_manager.get_document_chunk_text(doc.id)
+            if not text.strip():
+                print(f"  ⚠️  {doc.filename}: no stored text found — skipping")
+                return "skipped"
+            try:
+                meta = _extract_document_metadata(text)
+                self.db_manager.update_document_metadata(
+                    document_id=doc.id,
+                    tickers=meta.get("tickers"),
+                    report_type=meta.get("report_type"),
+                    sector=meta.get("sector"),
+                    asset_class=meta.get("asset_class"),
+                    coverage_period_from=_parse_date(meta.get("coverage_period_from")),
+                    coverage_period_to=_parse_date(meta.get("coverage_period_to")),
+                    # Also fill sender fields if they were previously missing
+                    sender_name=meta.get("sender_name") if not doc.sender_name else None,
+                    sender_company=meta.get("sender_company") if not doc.sender_company else None,
+                    sent_date=_parse_date(meta.get("sent_date")) if not doc.sent_date else None,
+                )
+                tickers_str = ", ".join(meta.get("tickers") or []) or "—"
+                print(
+                    f"  ✅ {doc.filename}\n"
+                    f"     tickers={tickers_str}  type={meta.get('report_type')}  "
+                    f"class={meta.get('asset_class')}  sector={meta.get('sector')}"
+                )
+                return "updated"
+            except Exception as e:
+                print(f"  ❌ {doc.filename}: {e}")
+                return "failed"
+
+        workers = min(max_workers, len(docs))
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            for outcome in ex.map(_process_one, docs):
+                results[outcome] += 1
+
+        print(
+            f"\n📊 Metadata backfill complete: "
+            f"{results['updated']} updated, "
+            f"{results['skipped']} skipped, "
+            f"{results['failed']} failed"
+        )
         return results
 
     def _set_parent_sibling_metadata(
@@ -202,22 +321,46 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="PDF pipeline: Docling + Gemini verbalization")
-    parser.add_argument("input", help="PDF file or directory (e.g. research_pdfs/)")
+    parser.add_argument(
+        "input", nargs="?",
+        help="PDF file or directory to ingest (omit when using --backfill-metadata)",
+    )
     parser.add_argument(
         "--db-url",
         default=os.getenv("PDF_SUMMARIZER_DB_URL", "postgresql+psycopg://user:password@localhost/pdf_summarizer"),
         help="Database URL (Postgres + pgvector required)",
     )
     parser.add_argument("--no-skip-existing", action="store_true", help="Reprocess existing files")
+    parser.add_argument(
+        "--max-workers", type=int, default=4,
+        help="Max concurrent PDFs when processing a directory (default: 4)",
+    )
+    parser.add_argument(
+        "--backfill-metadata", action="store_true",
+        help="Re-extract tickers / report_type / sector / asset_class / coverage_period "
+             "for all existing documents that are missing these fields. "
+             "No re-ingestion — uses already-stored chunk text.",
+    )
 
     args = parser.parse_args()
     pipeline = PDFSummarizerPipeline(database_url=args.db_url)
+
+    if args.backfill_metadata:
+        pipeline.backfill_document_metadata(max_workers=args.max_workers)
+        return
+
+    if not args.input:
+        parser.error("positional argument 'input' is required unless --backfill-metadata is set")
 
     path = Path(args.input)
     if path.is_file() and path.suffix.lower() == ".pdf":
         pipeline.process_single_pdf(str(path), skip_existing=not args.no_skip_existing)
     elif path.is_dir():
-        pipeline.process_directory(str(path), skip_existing=not args.no_skip_existing)
+        pipeline.process_directory(
+            str(path),
+            skip_existing=not args.no_skip_existing,
+            max_workers=args.max_workers,
+        )
     else:
         print(f"❌ Invalid input: {args.input} (must be PDF file or directory)")
         sys.exit(1)
