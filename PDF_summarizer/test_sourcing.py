@@ -53,7 +53,7 @@ def test_context_contains_source():
 
     from rag_gemini import GeminiRAGPipeline
     chunk = make_chunk("annual_report_2024.pdf", 7, "Revenue was $100M", "Revenue summary")
-    context = pipeline._build_context([chunk])
+    context, _ = pipeline._build_context([chunk])
 
     if "annual_report_2024.pdf" not in context:
         failed("context contains filename", f"filename missing from context:\n{context}")
@@ -118,7 +118,7 @@ def test_multiple_sources_in_context():
         make_chunk("report_a.pdf", 3, "Revenue A", "Summary A", doc_id=1),
         make_chunk("report_b.pdf", 9, "Revenue B", "Summary B", doc_id=2),
     ]
-    context = pipeline._build_context(chunks)
+    context, _ = pipeline._build_context(chunks)
 
     for filename, page in [("report_a.pdf", 3), ("report_b.pdf", 9)]:
         if filename not in context:

@@ -23,8 +23,8 @@ from docling.datamodel.document import PictureItem
 from google import genai
 from google.genai import types
 
-VERBALIZE_MODEL = "models/gemini-2.5-flash"
-TEXT_SUMMARY_MODEL = "models/gemini-2.5-flash"
+VERBALIZE_MODEL = "models/gemini-3.5-flash"
+TEXT_SUMMARY_MODEL = "models/gemini-3.5-flash"
 IMAGE_RESOLUTION_SCALE = 2.0
 
 

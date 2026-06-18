@@ -17,6 +17,12 @@ class DocumentOut(BaseModel):
     sender_company: Optional[str] = None
     sent_date: Optional[date] = None
     written_date: Optional[date] = None
+    tickers: Optional[List[str]] = None
+    report_type: Optional[str] = None
+    sector: Optional[str] = None
+    asset_class: Optional[str] = None
+    coverage_period_from: Optional[date] = None
+    coverage_period_to: Optional[date] = None
     uploaded_at: datetime
     processed_at: Optional[datetime] = None
 
@@ -33,9 +39,15 @@ class UploadResult(BaseModel):
 
 # ── Queries ────────────────────────────────────────────────────────────────
 
+class HistoryMessage(BaseModel):
+    role: str       # "user" | "assistant"
+    content: str
+
+
 class AskRequest(BaseModel):
     question: str
     top_k: int = 3
+    history: Optional[List[HistoryMessage]] = None
     document_ids: Optional[List[int]] = None
     filenames: Optional[List[str]] = None
     page_min: Optional[int] = None
@@ -44,6 +56,12 @@ class AskRequest(BaseModel):
     sender_companies: Optional[List[str]] = None
     written_date_from: Optional[date] = None
     written_date_to: Optional[date] = None
+    tickers: Optional[List[str]] = None
+    report_type: Optional[str] = None
+    sector: Optional[str] = None
+    asset_class: Optional[str] = None
+    coverage_period_from: Optional[date] = None
+    coverage_period_to: Optional[date] = None
 
 
 class ChunkRef(BaseModel):
@@ -56,6 +74,9 @@ class ChunkRef(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     chunks_used: List[ChunkRef]
+    inferred_filters: Optional[Dict[str, Any]] = None
+    query_type: str = "rag"
+    is_enumeration: bool = False
 
 
 class BackfillResponse(BaseModel):

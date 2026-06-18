@@ -21,8 +21,8 @@ load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".env
 
 from rag_gemini import GeminiRAGPipeline, RetrievalFilters
 
-DECOMPOSE_MODEL = "models/gemini-2.5-flash"
-SYNTHESIS_MODEL = "models/gemini-2.5-flash"
+DECOMPOSE_MODEL = "models/gemini-3.5-flash"
+SYNTHESIS_MODEL = "models/gemini-3.5-flash"
 
 
 class ResearchAgent:

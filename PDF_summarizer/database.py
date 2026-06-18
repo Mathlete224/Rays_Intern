@@ -19,6 +19,7 @@ from sqlalchemy import (
     Text,
     create_engine,
     func,
+    literal,
     or_,
     text,
 )
@@ -28,6 +29,28 @@ from sqlalchemy.orm import joinedload, relationship, sessionmaker
 from pgvector.sqlalchemy import Vector
 
 Base = declarative_base()
+
+
+def _sender_company_filter(sender_companies):
+    """Build a fuzzy, bidirectional substring filter on PDFDocument.sender_company.
+
+    The same authoring firm is often stored under inconsistent names ("SinoPac" vs
+    "SinoPac Securities"). Exact matching means a query for one form silently excludes
+    docs stored under the other. Instead, match a document when its stored name contains
+    the requested name OR the requested name contains the stored name — so any SinoPac
+    variant matches every SinoPac document regardless of which form was extracted.
+    OR logic across the requested companies.
+    """
+    clauses = []
+    for c in sender_companies:
+        clauses.append(
+            (PDFDocument.sender_company.isnot(None)) &
+            or_(
+                PDFDocument.sender_company.ilike(f"%{c}%"),
+                literal(c).ilike(func.concat("%", PDFDocument.sender_company, "%")),
+            )
+        )
+    return or_(*clauses)
 
 
 class PDFDocument(Base):
@@ -416,6 +439,23 @@ class DatabaseManager:
         finally:
             session.close()
 
+    def clear_all_embeddings(self) -> int:
+        """NULL every chunk's embedding so a full re-embed reprocesses the whole corpus.
+        Used when switching embedding models — old vectors aren't comparable to new ones.
+        Returns the number of rows cleared."""
+        session = self.get_session()
+        try:
+            n = session.query(PDFChunk).update(
+                {PDFChunk.embedding: None}, synchronize_session=False
+            )
+            session.commit()
+            return n
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
     def get_chunks_without_embedding(self, limit: int = 100) -> List[PDFChunk]:
         session = self.get_session()
         try:
@@ -479,7 +519,7 @@ class DatabaseManager:
             if sender_names:
                 q = q.filter(PDFDocument.sender_name.in_(sender_names))
             if sender_companies:
-                q = q.filter(PDFDocument.sender_company.in_(sender_companies))
+                q = q.filter(_sender_company_filter(sender_companies))
             if written_date_from is not None or written_date_to is not None:
                 # Use COALESCE(written_date, sent_date) so documents where only
                 # sent_date is populated (the common case from the ingestion pipeline)
@@ -527,5 +567,72 @@ class DatabaseManager:
 
             q = q.order_by(distance_col)
             return q.limit(limit).all()
+        finally:
+            session.close()
+
+    def list_documents_filtered(
+        self,
+        document_ids: Optional[Sequence[int]] = None,
+        filenames: Optional[Sequence[str]] = None,
+        sender_names: Optional[Sequence[str]] = None,
+        sender_companies: Optional[Sequence[str]] = None,
+        written_date_from=None,
+        written_date_to=None,
+        tickers: Optional[Sequence[str]] = None,
+        report_type: Optional[str] = None,
+        sector: Optional[str] = None,
+        asset_class: Optional[str] = None,
+        coverage_period_from=None,
+        coverage_period_to=None,
+    ) -> List[PDFDocument]:
+        """Return all PDFDocument rows matching metadata filters, with no limit.
+
+        Mirrors the filter logic of semantic_search_chunks but queries PDFDocument
+        directly — no embedding, no similarity threshold, no chunk join.
+        Used by the list_documents query path to return an uncapped document inventory.
+        """
+        session = self.get_session()
+        try:
+            q = session.query(PDFDocument)
+
+            if document_ids:
+                q = q.filter(PDFDocument.id.in_(document_ids))
+            if filenames:
+                q = q.filter(PDFDocument.filename.in_(filenames))
+            if sender_names:
+                q = q.filter(PDFDocument.sender_name.in_(sender_names))
+            if sender_companies:
+                q = q.filter(_sender_company_filter(sender_companies))
+            if written_date_from is not None or written_date_to is not None:
+                effective_date = func.coalesce(PDFDocument.written_date, PDFDocument.sent_date)
+                if written_date_from is not None:
+                    q = q.filter(effective_date >= written_date_from)
+                if written_date_to is not None:
+                    q = q.filter(effective_date <= written_date_to)
+            if tickers:
+                q = q.filter(or_(*[
+                    cast(PDFDocument.tickers, Text).ilike(f"%{t}%")
+                    for t in tickers
+                ]))
+            if report_type:
+                q = q.filter(PDFDocument.report_type == report_type)
+            if sector:
+                q = q.filter(PDFDocument.sector.ilike(f"%{sector}%"))
+            if asset_class:
+                q = q.filter(PDFDocument.asset_class == asset_class)
+            if coverage_period_from is not None or coverage_period_to is not None:
+                if coverage_period_from is not None:
+                    q = q.filter(
+                        PDFDocument.coverage_period_to.is_(None) |
+                        (PDFDocument.coverage_period_to >= coverage_period_from)
+                    )
+                if coverage_period_to is not None:
+                    q = q.filter(
+                        PDFDocument.coverage_period_from.is_(None) |
+                        (PDFDocument.coverage_period_from <= coverage_period_to)
+                    )
+
+            q = q.order_by(PDFDocument.written_date.desc(), PDFDocument.id.desc())
+            return q.all()
         finally:
             session.close()

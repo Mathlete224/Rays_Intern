@@ -4,14 +4,105 @@ import { useChatStore } from '../store/chatStore';
 import type { FilterContext } from '../store/chatStore';
 import { useDocumentStore } from '../store/documentStore';
 import { useFilterStore } from '../store/filterStore';
-import type { ChunkRef } from '../types';
+import type { HistoryMessage } from '../types';
+import { extractCitations, stripCitations } from '../lib/citations';
+
+// Last 14 messages (7 Q&A pairs) sent as conversation context with every request.
+const HISTORY_WINDOW = 14;
+
+// Split an answer into blocks: each numbered list item ("1)" / "1.", including its
+// indented "Source:" continuation line) or each blank-line-separated paragraph.
+function splitBlocks(content: string): string[] {
+  const lines = content.split('\n');
+  const blocks: string[] = [];
+  let current: string[] = [];
+  const flush = () => {
+    const text = current.join('\n').trim();
+    if (text) blocks.push(text);
+    current = [];
+  };
+  const numbered = /^\s*\d+[).]\s/;
+  for (const line of lines) {
+    if (line.trim() === '') {
+      flush();
+      continue;
+    }
+    if (numbered.test(line)) flush();
+    current.push(line);
+  }
+  flush();
+  return blocks;
+}
+
+// No markdown renderer is wired up; just drop **bold** markers so filenames read cleanly.
+function stripBold(text: string): string {
+  return text.replace(/\*\*(.+?)\*\*/g, '$1');
+}
+
+// Strip a leading list marker ("1)", "1.", "1 -", "1:") so we can renumber consistently.
+function stripLeadingNumber(text: string): { text: string; hadNumber: boolean } {
+  const m = text.match(/^\s*\d+\s*[).:\-]\s+/);
+  return m ? { text: text.slice(m[0].length), hadNumber: true } : { text, hadNumber: false };
+}
+
+// Render an assistant answer with each block's source citations as blue pills directly
+// beneath that block. When the response is an enumeration (e.g. "list 10 trends"), number
+// the items 1), 2), 3), ... deterministically so the format is consistent regardless of
+// whether the model numbered them itself.
+function renderAnswer(content: string, isEnumeration = false) {
+  const blocks = splitBlocks(content);
+  let itemNo = 0;
+  return (
+    <div className="flex flex-col gap-2">
+      {blocks.map((block, i) => {
+        const cites = extractCitations(block);
+        let prose = stripBold(stripCitations(block));
+        let number: number | null = null;
+        if (isEnumeration) {
+          const stripped = stripLeadingNumber(prose);
+          // A block is a list item if it was numbered or carries its own source.
+          if (stripped.hadNumber || cites.length > 0) {
+            prose = stripped.text;
+            itemNo += 1;
+            number = itemNo;
+          }
+        }
+        return (
+          <div key={i} className="flex flex-col gap-1">
+            {prose && (
+              <div className="whitespace-pre-wrap">
+                {number != null && <span className="font-semibold">{number}) </span>}
+                {prose}
+              </div>
+            )}
+            {cites.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {cites.map((c, j) => (
+                  <span
+                    key={j}
+                    className="text-xs px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200"
+                  >
+                    {c.filename}
+                    {c.pages.length > 0 ? ` p.${c.pages.join(', ')}` : ''}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export function ChatView() {
   const { sessions, activeSessionId, activeSession, newSession, addMessage } = useChatStore();
-  const { documents, fetchDocuments, setHighlightedIds } = useDocumentStore();
+  const { documents, fetchDocuments, setHighlightedDocs, clearHighlights } = useDocumentStore();
   const {
     company, author, writtenDateFrom, writtenDateTo,
+    ticker, reportType, sector, assetClass,
     setCompany, setAuthor, setWrittenDateFrom, setWrittenDateTo,
+    setTicker, setReportType, setSector, setAssetClass,
     reset: resetFilters, activeCount,
   } = useFilterStore();
 
@@ -52,28 +143,62 @@ export function ChatView() {
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
+    // Snapshot current messages BEFORE adding the new user message so we don't
+    // include the message being sent in the history we pass to the backend.
+    const currentMessages = activeSession()?.messages ?? [];
+
     addMessage(sessionId, { id: `${Date.now()}`, role: 'user', content: question });
     setLoading(true);
     const filterContext = buildFilterContext();
 
+    // Build conversation history: last HISTORY_WINDOW user+assistant messages.
+    const history: HistoryMessage[] = currentMessages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .slice(-HISTORY_WINDOW)
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+
     try {
       const result = await askQuestion({
         question,
+        history: history.length > 0 ? history : undefined,
         sender_companies: company ? [company] : undefined,
         sender_names: author ? [author] : undefined,
         written_date_from: writtenDateFrom || undefined,
         written_date_to: writtenDateTo || undefined,
+        tickers: ticker ? [ticker] : undefined,
+        report_type: reportType || undefined,
+        sector: sector || undefined,
+        asset_class: assetClass || undefined,
       });
-      const usedDocIds = [...new Set(result.chunks_used.map(c => c.document_id))];
-      setHighlightedIds(usedDocIds);
+      // Highlight, on the left, exactly the documents this response references — for every
+      // response type. RAG answers carry their cited chunks (document_id verified by the
+      // backend); list-document and follow-up answers don't, so fall back to matching any
+      // document whose filename appears in the answer text (the listed/cited filenames).
+      let citedIds = [...new Set(result.chunks_used.map(c => c.document_id))];
+      if (citedIds.length === 0) {
+        citedIds = documents.filter(d => result.answer.includes(d.filename)).map(d => d.id);
+      }
+      // Order the cited documents by where each first appears in the answer text, so the
+      // sidebar reflects the order they were actually cited in the response.
+      const citeOrder = (id: number) => {
+        const fn = documents.find(d => d.id === id)?.filename;
+        const idx = fn ? result.answer.indexOf(fn) : -1;
+        return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+      };
+      citedIds = [...citedIds].sort((a, b) => citeOrder(a) - citeOrder(b));
+      setHighlightedDocs(citedIds, citedIds);
       addMessage(sessionId, {
         id: `${Date.now() + 1}`,
         role: 'assistant',
         content: result.answer,
         chunks: result.chunks_used,
         filterContext,
+        inferredFilters: result.inferred_filters,
+        queryType: result.query_type,
+        isEnumeration: result.is_enumeration,
       });
     } catch {
+      clearHighlights();
       addMessage(sessionId, {
         id: `${Date.now() + 1}`,
         role: 'system',
@@ -135,7 +260,13 @@ export function ChatView() {
   }
 
   const filterCount = activeCount();
-  const docMap = Object.fromEntries(documents.map(d => [d.id, d.filename]));
+
+  // Count only user + assistant messages (not system notices) to determine
+  // whether the history window has been exceeded.
+  const conversationMessageCount = messages.filter(
+    m => m.role === 'user' || m.role === 'assistant'
+  ).length;
+  const historyOverflow = conversationMessageCount > HISTORY_WINDOW;
 
   function buildFilterContext(): FilterContext | undefined {
     const ctx: FilterContext = {};
@@ -155,8 +286,41 @@ export function ChatView() {
     return parts.join(' · ');
   }
 
+  /** Format auto-inferred hard filters from the backend as readable chip labels. */
+  function inferredFilterChips(filters: Record<string, unknown>): string[] {
+    const chips: string[] = [];
+    const companies = filters.sender_companies as string[] | null;
+    if (companies?.length) chips.push(`🏢 ${companies.join(', ')}`);
+    const from = filters.written_date_from as string | null;
+    const to = filters.written_date_to as string | null;
+    if (from || to) chips.push(`📅 published ${from ?? '…'} → ${to ?? '…'}`);
+    const covFrom = filters.coverage_period_from as string | null;
+    const covTo = filters.coverage_period_to as string | null;
+    if (covFrom || covTo) chips.push(`🗓️ covers ${covFrom ?? '…'} → ${covTo ?? '…'}`);
+    const pageMin = filters.page_min as number | null;
+    const pageMax = filters.page_max as number | null;
+    if (pageMin != null || pageMax != null) {
+      chips.push(`📄 pp. ${pageMin ?? '…'}–${pageMax ?? '…'}`);
+    }
+    return chips;
+  }
+
   return (
     <div className="flex flex-col h-full bg-white">
+      {/* Context window overflow warning */}
+      {historyOverflow && (
+        <div className="flex items-start gap-2 px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-xs text-amber-800">
+          <svg className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span>
+            <strong>Long conversation:</strong> only the last 7 exchanges are included in each response.
+            Earlier messages are no longer in context.
+          </span>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {messages.length === 0 && (
@@ -181,18 +345,8 @@ export function ChatView() {
                     ? 'bg-blue-500 text-white rounded-br-sm'
                     : 'bg-gray-100 text-gray-800 rounded-bl-sm'
                 }`}>
-                  {msg.content}
+                  {msg.role === 'assistant' ? renderAnswer(msg.content, msg.isEnumeration) : msg.content}
                 </div>
-                {msg.chunks && msg.chunks.length > 0 && (
-                  <div className="flex flex-wrap gap-1 px-1">
-                    {msg.chunks.map((c: ChunkRef, i: number) => (
-                      <span key={i} className="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">
-                        {docMap[c.document_id] ?? `doc ${c.document_id}`}
-                        {c.page_number != null ? ` p.${c.page_number}` : ''}
-                      </span>
-                    ))}
-                  </div>
-                )}
                 {msg.role === 'assistant' && msg.filterContext && (
                   <p className="text-xs text-gray-400 px-1 flex items-center gap-1">
                     <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,6 +355,21 @@ export function ChatView() {
                     </svg>
                     {formatFilterContext(msg.filterContext)}
                   </p>
+                )}
+                {msg.role === 'assistant' && msg.queryType !== 'list_documents' &&
+                  msg.inferredFilters &&
+                  inferredFilterChips(msg.inferredFilters).length > 0 && (
+                  <div className="flex flex-wrap gap-1 px-1 items-center">
+                    <span className="text-xs text-indigo-400 font-medium">Auto-filtered:</span>
+                    {inferredFilterChips(msg.inferredFilters).map((chip, i) => (
+                      <span key={i} className="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {msg.role === 'assistant' && msg.queryType === 'list_documents' && (
+                  <p className="text-xs text-gray-400 px-1">Document inventory</p>
                 )}
               </div>
             )}
@@ -241,6 +410,30 @@ export function ChatView() {
             <span className="inline-flex items-center gap-1 text-xs bg-white text-gray-700 border border-gray-200 px-2 py-0.5 rounded-full">
               written {writtenDateFrom || '…'}–{writtenDateTo || '…'}
               <button onClick={() => { setWrittenDateFrom(''); setWrittenDateTo(''); }} className="text-gray-400 hover:text-gray-600 leading-none">×</button>
+            </span>
+          )}
+          {ticker && (
+            <span className="inline-flex items-center gap-1 text-xs bg-white text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+              {ticker}
+              <button onClick={() => setTicker('')} className="text-emerald-400 hover:text-emerald-600 leading-none">×</button>
+            </span>
+          )}
+          {reportType && (
+            <span className="inline-flex items-center gap-1 text-xs bg-white text-orange-700 border border-orange-200 px-2 py-0.5 rounded-full">
+              {reportType.replace(/_/g, ' ')}
+              <button onClick={() => setReportType('')} className="text-orange-400 hover:text-orange-600 leading-none">×</button>
+            </span>
+          )}
+          {assetClass && (
+            <span className="inline-flex items-center gap-1 text-xs bg-white text-teal-700 border border-teal-200 px-2 py-0.5 rounded-full">
+              {assetClass.replace(/_/g, ' ')}
+              <button onClick={() => setAssetClass('')} className="text-teal-400 hover:text-teal-600 leading-none">×</button>
+            </span>
+          )}
+          {sector && (
+            <span className="inline-flex items-center gap-1 text-xs bg-white text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">
+              {sector}
+              <button onClick={() => setSector('')} className="text-indigo-400 hover:text-indigo-600 leading-none">×</button>
             </span>
           )}
           <button onClick={resetFilters} className="text-xs text-blue-400 hover:text-blue-600 ml-1">

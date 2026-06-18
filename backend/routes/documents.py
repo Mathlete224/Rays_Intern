@@ -19,21 +19,7 @@ def list_documents(db: DatabaseManager = Depends(get_db)):
     session = db.get_session()
     try:
         docs = session.query(PDFDocument).order_by(PDFDocument.uploaded_at.desc()).all()
-        return [
-            DocumentOut(
-                id=d.id,
-                filename=d.filename,
-                total_pages=d.total_pages,
-                file_size_bytes=d.file_size_bytes,
-                sender_name=d.sender_name,
-                sender_company=d.sender_company,
-                sent_date=d.sent_date,
-                written_date=d.written_date,
-                uploaded_at=d.uploaded_at,
-                processed_at=d.processed_at,
-            )
-            for d in docs
-        ]
+        return [DocumentOut.model_validate(d) for d in docs]
     finally:
         session.close()
 

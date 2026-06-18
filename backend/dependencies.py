@@ -13,7 +13,7 @@ _pdf_summarizer_dir = os.path.join(_backend_dir, "..", "PDF_summarizer")
 sys.path.insert(0, _pdf_summarizer_dir)
 
 from dotenv import load_dotenv
-load_dotenv(os.path.join(_backend_dir, "..", ".env"))
+load_dotenv(os.path.join(_backend_dir, "..", ".env"), override=True)
 
 # Must import before DatabaseManager so models are on Base before create_all
 import canvas_db  # noqa: F401 — side-effect registers Canvas, CanvasState on Base

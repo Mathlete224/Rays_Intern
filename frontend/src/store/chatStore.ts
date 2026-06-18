@@ -15,6 +15,9 @@ export interface ChatMessage {
   content: string;
   chunks?: ChunkRef[];
   filterContext?: FilterContext;
+  inferredFilters?: Record<string, unknown>;
+  queryType?: 'rag' | 'list_documents' | 'clarify';
+  isEnumeration?: boolean;
 }
 
 export interface ChatSession {

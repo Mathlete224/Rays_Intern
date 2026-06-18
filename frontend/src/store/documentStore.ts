@@ -5,17 +5,22 @@ import type { Document } from '../types';
 interface DocumentStore {
   documents: Document[];
   loading: boolean;
-  highlightedIds: number[];
+  // Documents the RAG retrieved chunks from (the candidate pool sent to the model).
+  fetchedIds: number[];
+  // Documents actually cited in the answer (a subset of fetched).
+  chosenIds: number[];
   fetchDocuments: () => Promise<void>;
   upload: (file: File) => Promise<void>;
   remove: (id: number) => Promise<void>;
-  setHighlightedIds: (ids: number[]) => void;
+  setHighlightedDocs: (fetched: number[], chosen: number[]) => void;
+  clearHighlights: () => void;
 }
 
 export const useDocumentStore = create<DocumentStore>((set, get) => ({
   documents: [],
   loading: false,
-  highlightedIds: [],
+  fetchedIds: [],
+  chosenIds: [],
 
   fetchDocuments: async () => {
     set({ loading: true });
@@ -37,12 +42,16 @@ export const useDocumentStore = create<DocumentStore>((set, get) => ({
     set(s => ({ documents: s.documents.filter(d => d.id !== id) }));
   },
 
-  setHighlightedIds: (ids: number[]) => set({ highlightedIds: ids }),
+  setHighlightedDocs: (fetched: number[], chosen: number[]) =>
+    set({ fetchedIds: fetched, chosenIds: chosen }),
+
+  clearHighlights: () => set({ fetchedIds: [], chosenIds: [] }),
 }));
 
 // Expose to browser console in dev for testing without an API call:
-// __setHighlightedIds([1, 2, 3])
+// __setHighlightedDocs([1, 2, 3], [1])  // fetched, chosen
 if (import.meta.env.DEV) {
-  (window as unknown as Record<string, unknown>).__setHighlightedIds =
-    (ids: number[]) => useDocumentStore.getState().setHighlightedIds(ids);
+  (window as unknown as Record<string, unknown>).__setHighlightedDocs =
+    (fetched: number[], chosen: number[]) =>
+      useDocumentStore.getState().setHighlightedDocs(fetched, chosen);
 }

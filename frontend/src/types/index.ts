@@ -7,6 +7,12 @@ export interface Document {
   sender_company: string | null;
   sent_date: string | null;
   written_date: string | null;
+  tickers: string[] | null;
+  report_type: string | null;
+  sector: string | null;
+  asset_class: string | null;
+  coverage_period_from: string | null;
+  coverage_period_to: string | null;
   uploaded_at: string;
   processed_at: string | null;
 }
@@ -18,8 +24,14 @@ export interface ChunkRef {
   metadata: Record<string, unknown>;
 }
 
+export interface HistoryMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface AskRequest {
   question: string;
+  history?: HistoryMessage[];
   top_k?: number;
   document_ids?: number[];
   filenames?: string[];
@@ -29,11 +41,20 @@ export interface AskRequest {
   sender_companies?: string[];
   written_date_from?: string;
   written_date_to?: string;
+  tickers?: string[];
+  report_type?: string;
+  sector?: string;
+  asset_class?: string;
+  coverage_period_from?: string;
+  coverage_period_to?: string;
 }
 
 export interface AskResponse {
   answer: string;
   chunks_used: ChunkRef[];
+  inferred_filters?: Record<string, unknown>;
+  query_type?: 'rag' | 'list_documents' | 'clarify';
+  is_enumeration?: boolean;
 }
 
 export interface SubQueryResult {

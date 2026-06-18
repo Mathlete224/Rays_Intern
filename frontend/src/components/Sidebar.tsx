@@ -4,21 +4,24 @@ const CIRCUMFERENCE = 2 * Math.PI * 9; // r=9 in a 24×24 viewBox
 import { useDocumentStore } from '../store/documentStore';
 import { useCanvasStore } from '../store/canvasStore';
 import { useChatStore } from '../store/chatStore';
-import { useFilterStore } from '../store/filterStore';
+import { useFilterStore, REPORT_TYPE_OPTIONS, ASSET_CLASS_OPTIONS } from '../store/filterStore';
 
 export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }) {
-  const { documents, loading, fetchDocuments, upload, remove, highlightedIds } = useDocumentStore();
+  const { documents, loading, fetchDocuments, upload, remove, fetchedIds, chosenIds } = useDocumentStore();
   const { savedCanvases, fetchSavedCanvases, loadCanvas, removeCanvas, newCanvas } = useCanvasStore();
-  const { sessions, activeSessionId, newSession, deleteSession, setActiveSession, renameSession } = useChatStore();
+  const { sessions, activeSessionId, newSession, deleteSession, setActiveSession, renameSession, addMessage } = useChatStore();
   const {
     company, author, writtenDateFrom, writtenDateTo,
+    ticker, reportType, sector, assetClass,
     setCompany, setAuthor, setWrittenDateFrom, setWrittenDateTo,
+    setTicker, setReportType, setSector, setAssetClass,
     reset: resetFilters, activeCount,
   } = useFilterStore();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(true);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
@@ -32,6 +35,12 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
     fetchDocuments();
     fetchSavedCanvases();
   }, []);
+
+  // Whenever a new response cites documents, open the Documents section so the blue
+  // highlights are visible without the user having to expand it manually.
+  useEffect(() => {
+    if (chosenIds.length > 0) setDocumentsOpen(true);
+  }, [chosenIds]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -51,22 +60,33 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
     }
   }
 
-  // Client-side filter + sort highlighted docs to the top
+  // Rank a doc by highlight tier: chosen (cited) = 0, fetched (retrieved) = 1, none = 2.
+  const docRank = (id: number) => (chosenIds.includes(id) ? 0 : fetchedIds.includes(id) ? 1 : 2);
+
+  // Client-side filter + sort cited docs to the top, then retrieved, then the rest.
+  // Within the cited tier, preserve the order they were cited in the answer (chosenIds
+  // is already ordered by first appearance in the response text).
   const filteredDocs = documents
     .filter(doc => {
       if (company && !doc.sender_company?.toLowerCase().includes(company.toLowerCase())) return false;
       if (author && !doc.sender_name?.toLowerCase().includes(author.toLowerCase())) return false;
       if (writtenDateFrom && doc.written_date && doc.written_date < writtenDateFrom) return false;
       if (writtenDateTo && doc.written_date && doc.written_date > writtenDateTo) return false;
+      if (ticker && !doc.tickers?.some(t => t.toLowerCase().includes(ticker.toLowerCase()))) return false;
+      if (reportType && doc.report_type !== reportType) return false;
+      if (sector && !doc.sector?.toLowerCase().includes(sector.toLowerCase())) return false;
+      if (assetClass && doc.asset_class !== assetClass) return false;
       return true;
     })
     .sort((a, b) => {
-      const aHighlighted = highlightedIds.includes(a.id) ? 0 : 1;
-      const bHighlighted = highlightedIds.includes(b.id) ? 0 : 1;
-      return aHighlighted - bHighlighted;
+      const rankDiff = docRank(a.id) - docRank(b.id);
+      if (rankDiff !== 0) return rankDiff;
+      if (docRank(a.id) === 0) return chosenIds.indexOf(a.id) - chosenIds.indexOf(b.id);
+      return 0;
     });
 
   const count = activeCount();
+  const hasHighlights = fetchedIds.length > 0;
 
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full overflow-hidden">
@@ -140,6 +160,58 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
                 </div>
               </div>
 
+              {/* Ticker */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Ticker</label>
+                <input
+                  type="text"
+                  value={ticker}
+                  onChange={e => setTicker(e.target.value.toUpperCase())}
+                  placeholder="e.g. BTC, AAPL"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                />
+              </div>
+
+              {/* Report type */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Report type</label>
+                <select
+                  value={reportType}
+                  onChange={e => setReportType(e.target.value)}
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                >
+                  {REPORT_TYPE_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Asset class */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Asset class</label>
+                <select
+                  value={assetClass}
+                  onChange={e => setAssetClass(e.target.value)}
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                >
+                  {ASSET_CLASS_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Sector */}
+              <div>
+                <label className="text-xs font-medium text-gray-500 block mb-1">Sector</label>
+                <input
+                  type="text"
+                  value={sector}
+                  onChange={e => setSector(e.target.value)}
+                  placeholder="e.g. Technology, Energy"
+                  className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-1 focus:ring-blue-300 bg-white"
+                />
+              </div>
+
               {count > 0 && (
                 <button
                   onClick={resetFilters}
@@ -155,14 +227,28 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
         {/* Documents section */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setDocumentsOpen(o => !o)}
+              className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+            >
+              <svg
+                className={`w-3.5 h-3.5 text-gray-400 transition-transform ${documentsOpen ? 'rotate-180' : ''}`}
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
               <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Documents</h2>
-              {count > 0 && documents.length > 0 && (
+              {documents.length > 0 && (
                 <span className="text-xs text-gray-400">
-                  {filteredDocs.length}/{documents.length}
+                  {count > 0 ? `${filteredDocs.length}/${documents.length}` : documents.length}
                 </span>
               )}
-            </div>
+              {chosenIds.length > 0 && (
+                <span className="text-xs bg-blue-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                  {chosenIds.length} cited
+                </span>
+              )}
+            </button>
             <button
               onClick={() => { setUploadError(null); fileRef.current?.click(); }}
               disabled={uploading}
@@ -172,6 +258,16 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
             </button>
             <input ref={fileRef} type="file" accept=".pdf" multiple className="hidden" onChange={handleUpload} />
           </div>
+
+          {/* Highlight legend — shown after a query highlights documents */}
+          {documentsOpen && hasHighlights && (
+            <div className="flex items-center gap-3 mb-2 px-0.5 text-xs text-gray-400">
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                Cited in this answer
+              </span>
+            </div>
+          )}
 
           {/* Upload progress banner */}
           {uploading && (
@@ -210,7 +306,7 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
             </div>
           )}
 
-          {loading ? (
+          {documentsOpen && (loading ? (
             <p className="text-xs text-gray-400 text-center py-2">Loading…</p>
           ) : documents.length === 0 && !uploading ? (
             <p className="text-xs text-gray-400 text-center py-2">No documents yet</p>
@@ -218,25 +314,50 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
             <p className="text-xs text-gray-400 text-center py-2">No documents match filters</p>
           ) : (
             <ul className="space-y-1">
-              {filteredDocs.map(doc => (
+              {filteredDocs.map(doc => {
+                const isChosen = chosenIds.includes(doc.id);
+                const isFetched = fetchedIds.includes(doc.id);
+                return (
                 <li
                   key={doc.id}
                   className={`flex items-start justify-between gap-1 rounded-lg px-2 py-1.5 text-xs border transition-colors ${
-                    highlightedIds.includes(doc.id)
+                    isChosen
                       ? 'bg-blue-50 border-blue-400'
-                      : 'bg-white border-gray-100'
+                      : isFetched
+                        ? 'bg-white border-blue-300 border-dashed'
+                        : 'bg-white border-gray-100'
                   }`}
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-700 truncate" title={doc.filename}>
-                      {doc.filename}
+                    <p className="font-medium text-gray-700 truncate flex items-center gap-1.5" title={doc.filename}>
+                      {(isChosen || isFetched) && (
+                        <span
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            isChosen ? 'bg-blue-500' : 'border border-blue-400 bg-white'
+                          }`}
+                          title={isChosen ? 'Cited in answer' : 'Retrieved'}
+                        />
+                      )}
+                      <span className="truncate">{doc.filename}</span>
                     </p>
                     <p className="text-gray-400">
                       {doc.total_pages} pages
                       {doc.sender_company && <span> · {doc.sender_company}</span>}
                     </p>
-                    {doc.written_date && (
-                      <p className="text-gray-400">Written {doc.written_date}</p>
+                    {doc.tickers && doc.tickers.length > 0 && (
+                      <p className="text-gray-400 truncate">
+                        {doc.tickers.slice(0, 4).join(' · ')}
+                        {doc.tickers.length > 4 && ' …'}
+                      </p>
+                    )}
+                    {(doc.report_type || doc.written_date) && (
+                      <p className="text-gray-400">
+                        {doc.report_type && (
+                          <span className="capitalize">{doc.report_type.replace(/_/g, ' ')}</span>
+                        )}
+                        {doc.report_type && doc.written_date && ' · '}
+                        {doc.written_date && `Written ${doc.written_date}`}
+                      </p>
                     )}
                   </div>
                   <button
@@ -247,9 +368,10 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
                     ×
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
-          )}
+          ))}
         </div>
 
         {/* Canvases section */}
@@ -302,7 +424,15 @@ export function Sidebar({ setView }: { setView: (v: 'canvas' | 'chat') => void }
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chats</h2>
             <button
-              onClick={() => { newSession(`Chat ${sessions.length + 1}`); setView('chat'); }}
+              onClick={() => {
+                const id = newSession(`Chat ${sessions.length + 1}`);
+                addMessage(id, {
+                  id: `sys-${Date.now()}`,
+                  role: 'system',
+                  content: 'New conversation started. The assistant has no memory of previous chats — each session is independent.',
+                });
+                setView('chat');
+              }}
               className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded-md transition-colors"
             >
               + New

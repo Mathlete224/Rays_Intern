@@ -6,7 +6,7 @@ from fastapi.concurrency import run_in_threadpool
 
 from dependencies import get_rag
 from rag_gemini import GeminiRAGPipeline, RetrievalFilters
-from models import AskRequest, AskResponse, BackfillResponse, ChunkRef
+from models import AskRequest, AskResponse, BackfillResponse, ChunkRef, HistoryMessage
 
 router = APIRouter()
 
@@ -25,13 +25,24 @@ async def ask_question(
         sender_companies=req.sender_companies,
         written_date_from=req.written_date_from,
         written_date_to=req.written_date_to,
+        tickers=req.tickers,
+        report_type=req.report_type,
+        sector=req.sector,
+        asset_class=req.asset_class,
+        coverage_period_from=req.coverage_period_from,
+        coverage_period_to=req.coverage_period_to,
     )
+    history = [m.model_dump() for m in req.history] if req.history else None
     result = await run_in_threadpool(
-        rag.answer_question, req.question, top_k=req.top_k, filters=filters
+        rag.answer_question, req.question, top_k=req.top_k, filters=filters,
+        history=history,
     )
     return AskResponse(
         answer=result["answer"],
         chunks_used=[ChunkRef(**c) for c in result["chunks_used"]],
+        inferred_filters=result.get("inferred_filters"),
+        query_type=result.get("query_type", "rag"),
+        is_enumeration=result.get("is_enumeration", False),
     )
 
 

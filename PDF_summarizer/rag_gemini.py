@@ -4,8 +4,10 @@ RAG pipeline: search on verbalized_summary, answer from raw_content.
 Flow: Return top 3 most relevant chunks; for each, include metadata + summary of the chunk,
 its parent, and its siblings, then repeat for the other two (~9 chunks in context).
 """
+import calendar
 import json
 import os
+import re
 import time
 import uuid as uuid_lib
 from dataclasses import dataclass
@@ -15,20 +17,131 @@ from typing import Dict, List, Optional, Sequence, Tuple
 from dotenv import load_dotenv
 import google.api_core.exceptions
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
+
+
+def _is_rate_limit(exc: Exception) -> bool:
+    """True if an exception is a 429/quota error, across both the google-genai SDK
+    (raises genai_errors.ClientError with code 429) and the older google-api-core
+    (ResourceExhausted). The SDK we use raises the former, so matching only the latter
+    silently skips retries."""
+    if isinstance(exc, google.api_core.exceptions.ResourceExhausted):
+        return True
+    if isinstance(exc, genai_errors.APIError) and getattr(exc, "code", None) == 429:
+        return True
+    return "RESOURCE_EXHAUSTED" in str(exc) or "429" in str(exc)
 
 from database import DatabaseManager, PDFChunk, PDFDocument
 
-# Use model that outputs 3072 dims (schema expects Vector(3072))
-# models/embedding-001 or models/text-embedding-005; gemini-embedding-001 defaults to 3072
-EMBEDDING_MODEL = "models/gemini-embedding-001"
-GENERATION_MODEL = "models/gemini-2.5-flash"
+# Embedding model. Output is truncated to EMBEDDING_DIMS (768) via output_dimensionality,
+# which must match Vector(768) in database.py. If a model does not support 768-dim output,
+# backfill will raise a dimension-mismatch error before writing (see _DimMismatch guard).
+EMBEDDING_MODEL = "models/gemini-embedding-2"
+GENERATION_MODEL = "models/gemini-3.5-flash"
 
 # Conversation history window: last 14 messages = 7 full Q&A pairs.
 # Enough for extended analysis sessions without bloating context.
 HISTORY_WINDOW = 14
 
 load_dotenv()
+
+
+# ── Deterministic period extraction ────────────────────────────────────────────
+# Detects an explicitly-named period in a question so coverage_period can be set
+# reliably, regardless of the LLM's (inconsistent) judgement of whether a query is
+# "scoped". This is what makes "Q1 2025" auto-filter every time, not just sometimes.
+_QUARTER_RE = re.compile(r"\bQ\s*([1-4])\s*[-/,]?\s*((?:19|20)\d{2})\b", re.IGNORECASE)
+_QUARTER_RE_YEAR_FIRST = re.compile(r"\b((?:19|20)\d{2})\s*[-/,]?\s*Q\s*([1-4])\b", re.IGNORECASE)
+_HALF_RE = re.compile(r"\bH\s*([12])\s*[-/,]?\s*((?:19|20)\d{2})\b", re.IGNORECASE)
+_MONTH_RE = re.compile(
+    r"\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|"
+    r"aug(?:ust)?|sep(?:t)?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+"
+    r"((?:19|20)\d{2})\b",
+    re.IGNORECASE,
+)
+_YEAR_RE = re.compile(r"\b((?:19|20)\d{2})\b")
+
+_QUARTER_RANGES = {
+    1: ((1, 1), (3, 31)),
+    2: ((4, 1), (6, 30)),
+    3: ((7, 1), (9, 30)),
+    4: ((10, 1), (12, 31)),
+}
+_MONTH_NUM = {
+    "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+    "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+}
+
+
+def _extract_coverage_period(question: str) -> Optional[Tuple[date_cls, date_cls]]:
+    """Extract an explicitly-named period (quarter, half-year, month, or year) from the
+    question and return (from_date, to_date). Most specific match wins; returns None if
+    no period is named."""
+    m = _QUARTER_RE.search(question)
+    if m:
+        q, yr = int(m.group(1)), int(m.group(2))
+        (sm, sd), (em, ed) = _QUARTER_RANGES[q]
+        return date_cls(yr, sm, sd), date_cls(yr, em, ed)
+    m = _QUARTER_RE_YEAR_FIRST.search(question)
+    if m:
+        yr, q = int(m.group(1)), int(m.group(2))
+        (sm, sd), (em, ed) = _QUARTER_RANGES[q]
+        return date_cls(yr, sm, sd), date_cls(yr, em, ed)
+    m = _HALF_RE.search(question)
+    if m:
+        h, yr = int(m.group(1)), int(m.group(2))
+        return (date_cls(yr, 1, 1), date_cls(yr, 6, 30)) if h == 1 \
+            else (date_cls(yr, 7, 1), date_cls(yr, 12, 31))
+    m = _MONTH_RE.search(question)
+    if m:
+        mon = _MONTH_NUM[m.group(1)[:3].lower()]
+        yr = int(m.group(2))
+        last = calendar.monthrange(yr, mon)[1]
+        return date_cls(yr, mon, 1), date_cls(yr, mon, last)
+    m = _YEAR_RE.search(question)
+    if m:
+        yr = int(m.group(1))
+        return date_cls(yr, 1, 1), date_cls(yr, 12, 31)
+    return None
+
+
+# Nouns that, when enumerated, signal CONTENT (a RAG analysis) rather than a file inventory.
+_CONTENT_LIST_NOUNS = frozenset({
+    "trend", "trends", "risk", "risks", "takeaway", "takeaways", "theme", "themes",
+    "point", "points", "idea", "ideas", "finding", "findings", "reason", "reasons",
+    "factor", "factors", "driver", "drivers", "highlight", "highlights", "insight",
+    "insights", "observation", "observations", "catalyst", "catalysts", "call", "calls",
+    "recommendation", "recommendations", "conclusion", "conclusions", "thing", "things",
+})
+# Nouns that signal the user wants the FILES themselves (a document inventory).
+_DOCUMENT_NOUNS = frozenset({
+    "document", "documents", "file", "files", "report", "reports", "doc", "docs",
+    "note", "notes", "pdf", "pdfs",
+})
+
+
+def _is_content_enumeration(question: str) -> bool:
+    """True if the question asks to enumerate CONTENT (trends, risks, takeaways, ...) rather
+    than documents — i.e. a RAG analysis that happens to be list-shaped. Used to correct a
+    classifier that over-eagerly routes any 'list ...' query to the document inventory."""
+    words = set(re.findall(r"[a-z]+", question.lower()))
+    if words & _DOCUMENT_NOUNS:
+        return False  # explicitly about files/reports → let the inventory path handle it
+    return bool(words & _CONTENT_LIST_NOUNS)
+
+
+def _apply_period_safety_net(result: dict, question: str) -> dict:
+    """Fill coverage_period_from/to deterministically when the question names a period and
+    the LLM didn't already set it, so auto-filtering is consistent run-to-run."""
+    hf = result.get("hard_filters") or {}
+    result["hard_filters"] = hf
+    if not hf.get("coverage_period_from") and not hf.get("coverage_period_to"):
+        period = _extract_coverage_period(question)
+        if period:
+            hf["coverage_period_from"] = period[0].isoformat()
+            hf["coverage_period_to"] = period[1].isoformat()
+    return result
 
 
 def _get_client(api_key: Optional[str] = None) -> genai.Client:
@@ -55,8 +168,13 @@ def embed_text(text: str) -> List[float]:
 
 
 def embed_texts_batch(texts: List[str]) -> List[List[float]]:
-    """Embed a batch of texts in a single API call. Returns a parallel list of vectors.
-    Empty-string inputs get an empty list back; all others are embedded together."""
+    """Embed a batch of texts in one API call. Returns a parallel list of vectors;
+    empty-string inputs get an empty list back.
+
+    Each input is wrapped in its own ``types.Content`` so the model returns ONE embedding
+    per input. This matters for gemini-embedding-2: a bare list of strings is treated as a
+    single aggregated input, whereas a list of Content objects yields per-input embeddings.
+    """
     if not texts:
         return []
     client = _get_client()
@@ -65,14 +183,25 @@ def embed_texts_batch(texts: List[str]) -> List[List[float]]:
     if not indexed:
         return [[] for _ in texts]
     indices, non_empty = zip(*indexed)
+
+    contents = [
+        types.Content(parts=[types.Part.from_text(text=t)]) for t in non_empty
+    ]
     result = client.models.embed_content(
         model=EMBEDDING_MODEL,
-        contents=list(non_empty),
+        contents=contents,
         config=types.EmbedContentConfig(output_dimensionality=EMBEDDING_DIMS),
     )
+    embs = result.embeddings or []
+    if len(embs) != len(non_empty):
+        raise RuntimeError(
+            f"{EMBEDDING_MODEL} returned {len(embs)} embeddings for {len(non_empty)} "
+            f"inputs — expected one per input."
+        )
+
     out: List[List[float]] = [[] for _ in texts]
     for rank, original_idx in enumerate(indices):
-        out[original_idx] = list(result.embeddings[rank].values)
+        out[original_idx] = list(embs[rank].values)
     return out
 
 
@@ -111,12 +240,33 @@ class GeminiRAGPipeline:
         self,
         batch_size: int = 64,
         max_batches: Optional[int] = None,
+        reset: bool = False,
+        sleep: float = 0.0,
     ) -> int:
         """Generate embeddings for chunks that don't have them yet.
 
         Embeds an entire batch in a single API call instead of one call per chunk,
         cutting embedding time from O(n) round-trips to O(n/batch_size) round-trips.
+
+        reset=True first NULLs every existing embedding, so the whole corpus is re-embedded
+        — use this when switching EMBEDDING_MODEL (vectors from different models aren't
+        comparable). Each batch retries on rate limits, and a dimension guard aborts before
+        writing if the model's output doesn't match the Vector(EMBEDDING_DIMS) schema.
         """
+        if reset:
+            # Probe the model's output dimension BEFORE wiping anything, so a model that
+            # can't emit EMBEDDING_DIMS fails here rather than leaving an empty index.
+            probe = embed_text("dimension probe")
+            if probe and len(probe) != EMBEDDING_DIMS:
+                raise ValueError(
+                    f"{EMBEDDING_MODEL} produced {len(probe)}-dim vectors but the schema is "
+                    f"Vector({EMBEDDING_DIMS}). Refusing to clear existing embeddings. Pick a "
+                    f"model that supports {EMBEDDING_DIMS}-dim output, or migrate the "
+                    f"pdf_chunks.embedding column + index to {len(probe)} dims first."
+                )
+            cleared = self.db.clear_all_embeddings()
+            print(f"[RESET] cleared {cleared} existing embedding(s) for a full re-embed")
+
         total = 0
         batches = 0
 
@@ -137,14 +287,38 @@ class GeminiRAGPipeline:
                 for chunk in chunks
             ]
 
-            embeddings = embed_texts_batch(texts)
+            # Retry on rate limits so a full re-embed doesn't abort mid-run (the embedding
+            # API path otherwise has no backoff, unlike generation).
+            for attempt in range(6):
+                try:
+                    embeddings = embed_texts_batch(texts)
+                    break
+                except Exception as exc:
+                    if not _is_rate_limit(exc) or attempt == 5:
+                        raise
+                    wait = min(60, 10 * (2 ** attempt))  # 10,20,40,60,60s
+                    print(f"[WARNING] embedding rate limited, retrying in {wait}s "
+                          f"(attempt {attempt + 1}/6)")
+                    time.sleep(wait)
 
             for chunk, emb in zip(chunks, embeddings):
-                if emb:
-                    self.db.upsert_chunk_embedding(chunk.id, emb)
-                    total += 1
+                if not emb:
+                    continue
+                if len(emb) != EMBEDDING_DIMS:
+                    raise ValueError(
+                        f"{EMBEDDING_MODEL} returned {len(emb)}-dim vectors, but the schema is "
+                        f"Vector({EMBEDDING_DIMS}). This model may not support "
+                        f"{EMBEDDING_DIMS}-dim output. Aborting before writing — either pick a "
+                        f"model that supports {EMBEDDING_DIMS} dims, or migrate the "
+                        f"pdf_chunks.embedding column + index to the new size."
+                    )
+                self.db.upsert_chunk_embedding(chunk.id, emb)
+                total += 1
 
             batches += 1
+            print(f"[BACKFILL] embedded {total} chunk(s) so far...")
+            if sleep > 0:
+                time.sleep(sleep)  # proactively throttle to stay under rate/token limits
 
         return total
 
@@ -159,6 +333,56 @@ class GeminiRAGPipeline:
     # history to understand it should elaborate, not introduce new topics.
     FOLLOWUP_SIMILARITY_THRESHOLD = 0.0
 
+    # When 1–2 hard metadata filters are active (company, ticker, date, etc.) the
+    # document pool is already meaningfully narrowed, so we can relax the threshold.
+    SIMILARITY_THRESHOLD_FEW_FILTERS = 0.30
+
+    # When 3+ hard metadata filters are active the pool is tightly scoped; relax further.
+    SIMILARITY_THRESHOLD_MANY_FILTERS = 0.20
+
+    # Retrieval is driven by the similarity threshold, not a small top-k cap: every chunk
+    # above the threshold is used, so a broad question can pull in as much relevant context
+    # as exists. This ceiling is only a runaway guard against a very broad, low-threshold
+    # query (e.g. a company filter at the 0.20 tier) flooding the prompt with chunks.
+    RETRIEVAL_CEILING = 40
+
+    # Enumeration queries ("10 trends across SinoPac Q1") want BREADTH across documents,
+    # not depth in the one or two that best match a vague "trends" query. So we relax the
+    # threshold (the metadata filter already guarantees relevance) and cap how many chunks
+    # any single document can contribute, so retrieval spreads across many docs and the
+    # model has a real, citable page for each distinct item instead of fabricating one.
+    ENUMERATION_SIMILARITY_THRESHOLD = 0.05
+    ENUMERATION_PER_DOC_CAP = 3
+    # Candidate pool fetched from the DB before per-document diversification. Must be well
+    # above RETRIEVAL_CEILING so docs that rank below the top-40 by raw similarity still
+    # enter the pool and can be picked by the round-robin (otherwise diversity has nothing
+    # extra to spread to).
+    ENUMERATION_CANDIDATE_POOL = 200
+
+    # Citation verification: when True, also strip citations to pages that were only
+    # neighbouring context (parent/sibling), not independently retrieved as relevant.
+    # Default False strips only fabricated pages (never in context at all) — the safe check.
+    STRICT_CITATIONS = False
+
+    # Matches an in-text citation like "(report.pdf, p.3)", "(report.pdf, pages 9, 11)", or
+    # document-level "(report.pdf)" with no page. The filename may contain one level of nested
+    # parens (e.g. "91APP (6741).pdf"); requiring ".pdf" keeps prose parens like "(see below)"
+    # from matching. The page spec is optional so document-level citations parse too.
+    _CITATION_BODY = (
+        r"\((?:[^()]|\([^()]*\))*?\.pdf(?:[\s,]+(?:pp?\.?|pages?)?\s*\d[\d,\s\-–]*)?\)"
+    )
+    # Capturing version: group 1 = filename, group 2 = page spec (optional; None if absent).
+    _CITATION_RE = re.compile(
+        r"\(((?:[^()]|\([^()]*\))*?\.pdf)"
+        r"(?:[\s,]+((?:pp?\.?|pages?)?\s*\d[\d,\s\-–]*))?\)",
+        re.IGNORECASE,
+    )
+    # A run of adjacent citations separated only by commas/semicolons (a "Sources:" list).
+    # Used to merge repeated same-document citations within one list.
+    _CITATION_RUN_RE = re.compile(
+        rf"{_CITATION_BODY}(?:\s*[;,]\s*{_CITATION_BODY})*", re.IGNORECASE
+    )
+
     def _analyze_query(
         self,
         question: str,
@@ -170,6 +394,8 @@ class GeminiRAGPipeline:
              (strips filter noise, resolves history references like "their" / "that").
           3. Classifies whether this is a conversational follow-up (expand, clarify, continue)
              vs a genuinely new information search.
+          4. Classifies the query_type: "list_documents" (user wants an inventory of files)
+             vs "rag" (user wants an answer drawn from document content).
 
         Returns:
             {
@@ -181,10 +407,11 @@ class GeminiRAGPipeline:
                     "page_max": int | null,
                 },
                 "standalone_query": str,  # used for embedding / vector search
-                "is_followup": bool       # true → relax similarity threshold
+                "is_followup": bool,      # true → relax similarity threshold
+                "query_type": str,        # "rag" | "list_documents"
             }
 
-        Falls back to {"hard_filters": {}, "standalone_query": question, "is_followup": false}
+        Falls back to {"hard_filters": {}, "standalone_query": question, "is_followup": false, "query_type": "rag"}
         on any error so the pipeline degrades gracefully.
         """
         # Fetch known companies and filenames to ground the model's extraction.
@@ -217,11 +444,14 @@ Today's date: {today}
 Known companies in the database: {json.dumps(known_companies)}
 Known filenames: {json.dumps(known_filenames)}
 
-Given the conversation history and current question, return a JSON object with exactly three fields:
+Given the conversation history and current question, return a JSON object with exactly five fields:
 
 1. "hard_filters": deterministic constraints to narrow the document search.
    Extract only what is explicitly stated or clearly implied:
-   - "sender_companies": list of company/firm names matching a known company above, or null
+   - "sender_companies": list of company/firm names matching a known company above, or null.
+     Use the SHORTEST distinctive root shared across variants of the same firm — e.g. prefer
+     "SinoPac" over "SinoPac Securities" so every SinoPac-authored document is matched, not
+     just one naming variant. Matching is fuzzy/substring, so the root form is safest.
    - "written_date_from": ISO date (YYYY-MM-DD) for when the document was PUBLISHED, or null
    - "written_date_to":   ISO date (YYYY-MM-DD) for when the document was PUBLISHED, or null
    - "page_min": integer page lower bound if explicitly mentioned, or null
@@ -234,13 +464,12 @@ Given the conversation history and current question, return a JSON object with e
    - "asset_class": asset class if specified — one of: equity, crypto, fixed_income,
      commodity, fx, mixed — or null
    - "coverage_period_from": ISO date for the START of the period being ANALYSED
-     (not when published). Set ONLY when the user wants documents specifically scoped
-     to that period (e.g. "show me Q3 2024 reports", "SinoPac Q1 earnings").
-     Do NOT set for broad trend/knowledge questions like "what happened in Q1 2025?" —
-     include the period in standalone_query instead so semantic search finds it.
-     e.g. "SinoPac Q3 2024 earnings" → 2024-07-01. Or null.
-   - "coverage_period_to": ISO date for the END of the period being ANALYSED. Or null.
-     Same rule: only set when scoping to a specific period, not for general questions.
+     (not when published). Whenever the user explicitly names a period — a quarter,
+     half-year, month, or year (e.g. "Q1 2025", "H2 2023", "March 2024", "in 2025",
+     "what did SinoPac say about Q1 2025") — set this to the START of that period.
+     e.g. "SinoPac Q3 2024 earnings" → 2024-07-01. Or null if no period is named.
+   - "coverage_period_to": ISO date for the END of that named period
+     (e.g. Q3 2024 → 2024-09-30; "in 2025" → 2025-12-31). Or null.
 
    Quarter mapping: Q1=Jan 1–Mar 31, Q2=Apr 1–Jun 30, Q3=Jul 1–Sep 30, Q4=Oct 1–Dec 31.
    If a quarter is mentioned without a year, infer from context or use today's year.
@@ -252,12 +481,44 @@ Given the conversation history and current question, return a JSON object with e
    - Remove information already captured in hard_filters (ticker, date, company, report type)
    - Keep only the semantic/reasoning intent (what the user actually wants to know)
    - If the question is already self-contained, keep it as-is
+   - NEVER invent a topic. If removing the filters leaves no real topic (e.g. "what has
+     SinoPac said in Q1 2025?"), set standalone_query to just the company/period that
+     remains (or the original question) — do NOT fabricate themes like "earnings, forecasts".
 
 3. "is_followup": true if the question asks the assistant to elaborate, clarify, continue,
    or reason further about something already discussed (e.g. "can you expand on that",
    "tell me more", "what do you mean by X", "go deeper on the second point", "why is that").
    Set to false if the question requests genuinely new information from the documents,
    even if it references prior context (e.g. "what about their bond holdings?").
+
+4. "query_type": classify the user's intent as one of two strings. The deciding factor is
+   WHAT the user wants enumerated — the documents themselves, or content from inside them.
+   The word "list" alone does NOT mean "list_documents".
+   - "list_documents": the user wants an inventory of matching FILES/REPORTS/DOCUMENTS —
+     the documents are the answer. The thing being listed is documents. Triggered by:
+     "show me all files about X", "what documents do you have from Y",
+     "I want all files relevant to Z", "list all reports on W",
+     "how many files mention ticker T", "do you have any reports on X",
+     "what do you have about X", "give me a list of documents that cover X".
+   - "rag": the user wants CONTENT drawn from inside the documents — analysis, numbers,
+     quotes, summaries, comparisons, OR an enumeration of ideas/findings/themes. This
+     INCLUDES list-shaped requests whose items are content rather than documents, e.g.
+     "list 10 trends SinoPac talked about in Q1 2025", "give me 5 key risks",
+     "what are the main takeaways", "list the top themes this quarter". Here the items
+     are trends/risks/takeaways/themes (content), not files — so it is "rag".
+   Rule of thumb: if the items would be DOCUMENT NAMES → "list_documents"; if the items
+   would be SENTENCES/FACTS/IDEAS → "rag". When in doubt, use "rag".
+
+5. "is_underspecified": true ONLY when the question is scoped by a company/ticker/sector/date
+   (i.e. hard_filters above are non-empty) but names NO specific topic, stock, metric, event,
+   or answerable question — a broad "what did X say" with nothing to focus retrieval on.
+   - true:  "what has SinoPac said in Q1 2025?", "what's the latest from SinoPac?",
+            "anything from Apple recently?"  (filter + no topic)
+   - false: "what did SinoPac say about China Mobile?" (names a stock),
+            "give me an overview of SinoPac Q1 2025" / "summarize SinoPac's quarter"
+            (a summary/overview IS the intent — answer it, don't ask to clarify),
+            "what were the key risks?" (names a topic),
+            any question with no hard_filters at all (nothing to anchor a clarification).
 
 Conversation history (oldest first):
 {history_text}
@@ -285,10 +546,26 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
             # Ensure is_followup is always a bool
             result.setdefault("is_followup", False)
             result["is_followup"] = bool(result["is_followup"])
-            return result
+            # Ensure query_type is valid
+            result.setdefault("query_type", "rag")
+            if result["query_type"] not in ("list_documents", "rag"):
+                result["query_type"] = "rag"
+            # Deterministic guard: enumerating content (trends/risks/takeaways...) is a RAG
+            # analysis, not a file inventory — even when the user says "list".
+            if result["query_type"] == "list_documents" and _is_content_enumeration(question):
+                print("[DEBUG] query_type override: list_documents → rag (content enumeration)")
+                result["query_type"] = "rag"
+            # Ensure is_underspecified is always a bool
+            result.setdefault("is_underspecified", False)
+            result["is_underspecified"] = bool(result["is_underspecified"])
+            return _apply_period_safety_net(result, question)
         except Exception as exc:
             print(f"[WARNING] _analyze_query failed ({exc}); falling back to original question")
-            return {"hard_filters": {}, "standalone_query": question, "is_followup": False}
+            return _apply_period_safety_net(
+                {"hard_filters": {}, "standalone_query": question,
+                 "is_followup": False, "query_type": "rag"},
+                question,
+            )
 
     @staticmethod
     def _parse_date(value) -> Optional[date_cls]:
@@ -336,15 +613,20 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
         top_k: int = 3,
         filters: Optional[RetrievalFilters] = None,
         similarity_threshold: Optional[float] = None,
+        per_document_cap: Optional[int] = None,
     ) -> List[PDFChunk]:
         """Vector search over verbalized_summary embeddings.
 
         Expects `query` to already be the standalone/cleaned query from _analyze_query
         and `filters` to already be the merged result of _merge_filters.
-        Returns the top_k most relevant chunks that exceed the threshold,
-        or an empty list if nothing is relevant enough.
+        Returns every chunk that exceeds the similarity threshold (up to RETRIEVAL_CEILING),
+        ordered to lead with document/section context, or an empty list if nothing is
+        relevant enough. The similarity threshold — not a small top-k — is the relevance
+        gate, so breadth scales with how much relevant content actually exists.
 
         Args:
+            top_k: Retained for API compatibility but no longer caps retrieval; the
+                threshold and RETRIEVAL_CEILING govern how many chunks are returned.
             similarity_threshold: Override the default SIMILARITY_THRESHOLD.
                 Pass FOLLOWUP_SIMILARITY_THRESHOLD for conversational follow-ups.
         """
@@ -354,10 +636,13 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
             similarity_threshold = self.SIMILARITY_THRESHOLD
 
         query_emb = embed_text(query)
-        initial_limit = max(top_k * 3, top_k + 3)
+        final_limit = max(top_k, self.RETRIEVAL_CEILING)
+        # For breadth (enumeration), fetch a much larger candidate pool so diversify-by-
+        # document can reach docs that rank well below the top-40 by raw similarity.
+        candidate_limit = self.ENUMERATION_CANDIDATE_POOL if per_document_cap else final_limit
         raw_chunks = self.db.semantic_search_chunks(
             query_embedding=query_emb,
-            limit=initial_limit,
+            limit=candidate_limit,
             document_ids=filters.document_ids,
             filenames=filters.filenames,
             page_min=filters.page_min,
@@ -378,7 +663,21 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
         if not raw_chunks:
             return []
 
-        return self._diversify_chunks(raw_chunks, top_k=top_k)
+        # per_document_cap (enumeration/overview): spread retrieval across many documents so
+        # the model has a citable page for each distinct item. Otherwise reorder for
+        # hierarchy/section context (depth within the most relevant docs).
+        if per_document_cap:
+            diversified = self._diversify_by_document(
+                raw_chunks, top_k=final_limit, per_doc_cap=per_document_cap
+            )
+            print(f"[DEBUG] retrieved {len(diversified)} chunks across "
+                  f"{len({c.document_id for c in diversified})} documents "
+                  f"(from {len(raw_chunks)} candidates, per-doc cap {per_document_cap}, "
+                  f"threshold {similarity_threshold})")
+        else:
+            diversified = self._diversify_chunks(raw_chunks, top_k=final_limit)
+            print(f"[DEBUG] retrieved {len(diversified)} chunks above threshold {similarity_threshold}")
+        return diversified
 
     def _get_chunk_family(
         self, chunk: PDFChunk
@@ -406,19 +705,33 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
             pass
         return parent, prev_sib, next_sib
 
-    def _build_context(self, top_chunks: List[PDFChunk]) -> str:
+    def _build_context(self, top_chunks: List[PDFChunk]) -> Tuple[str, set]:
         """
-        Build context from top 3 chunks: for each chunk include its metadata + summary,
-        then the same for its parent and sibling chunks (~9 chunks total).
+        Build context from the retrieved chunks: for each chunk include its metadata +
+        summary + content, then the same for its parent and sibling chunks.
+
+        Chunk content is deduplicated across the whole context. A chunk's full content is
+        emitted only once; if it reappears (because two adjacent retrieved chunks are each
+        other's siblings, or many chunks share one section-level parent), later occurrences
+        show a short breadcrumb reference instead of repeating the text. This keeps the
+        prompt compact when many chunks are retrieved.
+
+        Returns (context_string, context_refs) where context_refs is the set of
+        (filename_lower, page_number) pairs for every chunk actually shown to the model —
+        used afterwards to verify the citations in the answer.
         """
+        # Seed with all primary retrieved chunk IDs so family expansion never re-emits a
+        # chunk that is itself a primary (e.g. two adjacent retrieved pages).
+        seen: set = {chunk.id for chunk in top_chunks}
+        context_refs: set = set()
         parts: List[str] = []
         for n, chunk in enumerate(top_chunks, 1):
             parent, prev_sib, next_sib = self._get_chunk_family(chunk)
             block = self._format_chunk_block(
-                chunk, parent, prev_sib, next_sib, label=f"Retrieved chunk {n}"
+                chunk, parent, prev_sib, next_sib, seen, context_refs, label=f"Retrieved chunk {n}"
             )
             parts.append(block)
-        return "\n\n".join(parts)
+        return "\n\n".join(parts), context_refs
 
     def _format_chunk_block(
         self,
@@ -426,9 +739,17 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
         parent: Optional[PDFChunk],
         prev_sibling: Optional[PDFChunk],
         next_sibling: Optional[PDFChunk],
+        seen: set,
+        context_refs: set,
         label: str = "Chunk",
     ) -> str:
-        """Format one retrieved chunk plus its parent and siblings (metadata + summary + content)."""
+        """Format one retrieved chunk plus its parent and siblings (metadata + summary + content).
+
+        `seen` is the set of chunk IDs already emitted in full anywhere in the context; it is
+        mutated here. Family members already in `seen` are rendered as a breadcrumb reference
+        rather than having their content repeated. `context_refs` collects the
+        (filename_lower, page_number) of every chunk shown, for later citation verification.
+        """
         lines: List[str] = [f"=== {label} ==="]
 
         def append_chunk(c: PDFChunk, role: str) -> None:
@@ -437,26 +758,484 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
             content = (c.raw_content or "").strip()
             filename = c.document.filename if c.document else f"document_id={c.document_id}"
             page = f" page {c.page_number}" if c.page_number is not None else ""
+            if c.document and c.page_number is not None:
+                context_refs.add((c.document.filename.lower(), c.page_number))
             lines.append(f"  {role} source: {filename}{page}")
             lines.append(f"  {role} metadata: {meta}")
             lines.append(f"  {role} summary: {summary[:1500]}{'...' if len(summary) > 1500 else ''}")
             lines.append(f"  {role} content: {content[:4000]}{'...' if len(content) > 4000 else ''}")
 
+        def append_family(c: Optional[PDFChunk], role: str) -> None:
+            if c is None:
+                lines.append(f"  {role}: (none)")
+            elif c.id in seen:
+                # Already shown in full elsewhere — reference it instead of repeating.
+                filename = c.document.filename if c.document else f"document_id={c.document_id}"
+                page = f" page {c.page_number}" if c.page_number is not None else ""
+                lines.append(f"  {role}: (already shown above — {filename}{page})")
+            else:
+                seen.add(c.id)
+                append_chunk(c, role)
+
+        # The primary chunk is always emitted in full (its ID is already in `seen`).
         append_chunk(chunk, "Chunk")
-        if parent:
-            append_chunk(parent, "Parent")
-        else:
-            lines.append("  Parent: (none)")
-        if prev_sibling:
-            append_chunk(prev_sibling, "Previous sibling")
-        else:
-            lines.append("  Previous sibling: (none)")
-        if next_sibling:
-            append_chunk(next_sibling, "Next sibling")
-        else:
-            lines.append("  Next sibling: (none)")
+        append_family(parent, "Parent")
+        append_family(prev_sibling, "Previous sibling")
+        append_family(next_sibling, "Next sibling")
 
         return "\n".join(lines)
+
+    @staticmethod
+    def _expand_pages(spec: Optional[str]) -> List[int]:
+        """Extract page numbers from a citation page spec, expanding ranges.
+        'pages 9, 11, 12' → [9, 11, 12];  'pp. 3-5' → [3, 4, 5];  None/'' → []."""
+        if not spec:
+            return []
+        pages: List[int] = []
+        for a, b in re.findall(r"(\d+)\s*[-–]\s*(\d+)", spec):
+            lo, hi = int(a), int(b)
+            if 0 < hi - lo < 100:  # guard against absurd ranges
+                pages.extend(range(lo, hi + 1))
+        spec_wo_ranges = re.sub(r"\d+\s*[-–]\s*\d+", " ", spec)
+        pages.extend(int(x) for x in re.findall(r"\d+", spec_wo_ranges))
+        return sorted(set(pages))
+
+    def _verify_citations(
+        self, answer: str, chunks: List[PDFChunk], context_refs: set
+    ) -> str:
+        """Document-level citation check (no LLM call). The model reliably gets the *document*
+        right (it sees the whole-doc summary) but not always the *page* (it only holds 1–3
+        real pages), so we verify at the document level:
+          - document was retrieved + the exact cited page was in context → keep '(doc, p.N)'
+          - document was retrieved but the page wasn't                  → keep '(doc)'  (page
+            unverifiable, but the document is right)
+          - document was never retrieved                                → strip (real fabrication)
+        This stops 'right document, wrong page' from being discarded, which is what was
+        leaving list items unsourced.
+        """
+        retrieved_files = {
+            c.document.filename.lower() for c in chunks if c.document
+        }
+        in_context = set(context_refs) | {
+            (c.document.filename.lower(), c.page_number)
+            for c in chunks
+            if c.document and c.page_number is not None
+        }
+        stats = {"page": 0, "doc_level": 0, "fabricated": 0}
+
+        def repl(m: "re.Match") -> str:
+            filename, spec = m.group(1), m.group(2)
+            fn_lower = filename.lower()
+            if fn_lower not in retrieved_files:
+                stats["fabricated"] += 1
+                return ""  # wrong document entirely → genuine fabrication, strip
+            kept = [p for p in self._expand_pages(spec) if (fn_lower, p) in in_context]
+            if kept:
+                stats["page"] += 1
+                if len(kept) == 1:
+                    return f"({filename}, p.{kept[0]})"
+                return f"({filename}, pp. {', '.join(str(p) for p in kept)})"
+            stats["doc_level"] += 1
+            return f"({filename})"  # right document, unverifiable page → cite document only
+
+        cleaned = self._CITATION_RE.sub(repl, answer)
+
+        # Tidy separators left by any stripped citations.
+        cleaned = re.sub(r",\s*,", ", ", cleaned)
+        cleaned = re.sub(r"(Sources:)\s*,\s*", r"\1 ", cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r"Sources:\s*(?=\n|$)", "", cleaned, flags=re.IGNORECASE)
+
+        print(
+            f"[CITATION CHECK] page-level={stats['page']} doc-level={stats['doc_level']} "
+            f"fabricated(stripped)={stats['fabricated']}"
+        )
+        return cleaned
+
+    def _consolidate_citations(self, answer: str) -> str:
+        """Merge adjacent citations to the same document into one (no LLM call):
+        '(doc.pdf, p.1), (doc.pdf, p.2), (doc.pdf, p.3)' → '(doc.pdf, pp. 1, 2, 3)'.
+        Only citations within one comma-separated run (a Sources: list) are merged, so
+        citations supporting different paragraphs stay separate.
+        """
+        def merge_run(m: "re.Match") -> str:
+            run = m.group(0)
+            cites = list(self._CITATION_RE.finditer(run))
+            if len(cites) <= 1:
+                return run  # single citation — nothing to merge
+            order: List[str] = []          # filename keys in first-seen order
+            pages_by: dict = {}            # key -> list of page numbers
+            display: dict = {}             # key -> original filename for output
+            for cm in cites:
+                fname, spec = cm.group(1), cm.group(2)
+                key = fname.lower()
+                if key not in pages_by:
+                    pages_by[key], display[key] = [], fname
+                    order.append(key)
+                pages_by[key].extend(self._expand_pages(spec))
+            parts: List[str] = []
+            for key in order:
+                pages = sorted(set(pages_by[key]))
+                fname = display[key]
+                if not pages:
+                    parts.append(f"({fname})")  # document-level citation, no page
+                elif len(pages) == 1:
+                    parts.append(f"({fname}, p.{pages[0]})")
+                else:
+                    parts.append(f"({fname}, pp. {', '.join(str(p) for p in pages)})")
+            return ", ".join(parts)
+
+        return self._CITATION_RUN_RE.sub(merge_run, answer)
+
+    def _enforce_sourced_items(self, answer: str) -> str:
+        """Guarantee every numbered list item carries a citation (no LLM call). Run AFTER
+        verification/consolidation: any item whose citation was stripped (the model cited a
+        document that wasn't retrieved) is dropped, and the survivors are renumbered. So a
+        list never shows an unsourced item.
+
+        Returns a fallback message if every item was dropped (nothing was attributable)."""
+        item_start = re.compile(r"^\s*\d+[).]\s")
+        lines = answer.split("\n")
+
+        preamble: List[str] = []
+        items: List[List[str]] = []
+        cur: Optional[List[str]] = None
+        for line in lines:
+            if item_start.match(line):
+                if cur is not None:
+                    items.append(cur)
+                cur = [line]
+            elif cur is not None:
+                cur.append(line)
+            else:
+                preamble.append(line)
+        if cur is not None:
+            items.append(cur)
+
+        if not items:
+            return answer  # not a numbered list — nothing to enforce
+
+        kept = [b for b in items if self._CITATION_RE.search("\n".join(b))]
+        dropped = len(items) - len(kept)
+        if dropped:
+            print(f"[SOURCING] dropped {dropped} list item(s) with no valid citation")
+
+        if not kept:
+            return (
+                "I couldn't find any items in the documents that I can attribute to a "
+                "specific source, so I'm not listing unsupported claims. Try narrowing the "
+                "question (a specific company, sector, or topic)."
+            )
+
+        out = list(preamble)
+        for i, block in enumerate(kept, 1):
+            out.append(re.sub(r"^(\s*)\d+[).]", rf"\g<1>{i})", block[0], count=1))
+            out.extend(block[1:])
+        return "\n".join(out)
+
+    def _select_cited_chunks(
+        self, answer: str, chunks: List[PDFChunk]
+    ) -> List[PDFChunk]:
+        """Return only the chunks the answer actually cites — not the whole retrieved
+        pool. Sources surfaced to the user should reflect what the model used, not every
+        low-similarity chunk that happened to be fetched as context.
+
+        A chunk is kept if its (filename, page) appears in a parsed citation. As a
+        fallback for filenames whose page spec didn't parse (e.g. an unclosed paren in
+        the name), a chunk is also kept if its filename is cited but none of that file's
+        pages parsed — so the source still surfaces rather than vanishing.
+        """
+        cited_pages: set = set()       # (filename_lower, page)
+        cited_files: set = set()       # filename_lower
+        for m in self._CITATION_RE.finditer(answer):
+            fn = m.group(1).lower()
+            cited_files.add(fn)
+            for p in self._expand_pages(m.group(2)):
+                cited_pages.add((fn, p))
+        files_with_pages = {fn for fn, _ in cited_pages}
+
+        selected: List[PDFChunk] = []
+        for c in chunks:
+            if not c.document:
+                continue
+            fn = c.document.filename.lower()
+            if (fn, c.page_number) in cited_pages:
+                selected.append(c)
+            elif fn in cited_files and fn not in files_with_pages:
+                selected.append(c)  # filename cited but page spec unparseable
+        print(
+            f"[SOURCES] retrieved={len(chunks)} cited={len(selected)} "
+            f"(documents: {len({c.document_id for c in selected})})"
+        )
+        return selected
+
+    # Inventory/list-related words that carry no semantic-search value. Used to decide
+    # whether a list query has a real *concept* to rank by, or is pure metadata.
+    _LIST_STOPWORDS = frozenset({
+        "list", "lists", "all", "show", "me", "give", "giving", "document", "documents",
+        "doc", "docs", "report", "reports", "file", "files", "what", "which", "do",
+        "does", "you", "your", "have", "having", "from", "about", "any", "the", "a",
+        "an", "of", "on", "for", "please", "i", "want", "wanted", "see", "related",
+        "relevant", "to", "associated", "with", "by", "in", "is", "are", "and", "or",
+        "that", "talk", "talks", "talking", "cover", "covers", "covering", "mention",
+        "mentions", "mentioning", "how", "many", "there", "find", "get", "got", "us",
+    })
+
+    def _has_semantic_intent(
+        self, standalone_query: str, merged_filters: RetrievalFilters
+    ) -> bool:
+        """True if the query carries a concept worth semantic ranking, beyond the
+        metadata filters already extracted. 'all SinoPac documents' → False (pure
+        metadata); 'SinoPac docs about supply chain' → True (concept present)."""
+        text = (standalone_query or "").lower()
+        for name in (merged_filters.sender_companies or []):
+            text = text.replace(name.lower(), " ")
+        for tk in (merged_filters.tickers or []):
+            text = text.replace(tk.lower(), " ")
+        if merged_filters.sector:
+            text = text.replace(merged_filters.sector.lower(), " ")
+        tokens = [t for t in re.findall(r"[a-z0-9]+", text) if t not in self._LIST_STOPWORDS]
+        return len(tokens) > 0
+
+    # Vague verbs/time words that carry no specific topic. A query made up of only these
+    # (plus a company/period filter) is an underspecified "what did X say" request. Note:
+    # "overview"/"summary"/"all"/"everything" are deliberately NOT here — those ARE the
+    # user's intent (a broad summary), so they should pass through, not trigger a re-ask.
+    _BROAD_STOPWORDS = _LIST_STOPWORDS | frozenset({
+        "has", "had", "said", "say", "says", "saying", "tell", "tells", "told", "telling",
+        "think", "thinks", "thought", "thinking", "discuss", "discussed", "discusses",
+        "comment", "comments", "commented", "commentary", "note", "noted", "notes",
+        "view", "views", "stance", "been", "was", "were", "did", "during", "recent",
+        "recently", "latest", "quarter", "quarters", "half", "year", "years", "their",
+        "they", "it", "its", "anything",
+    })
+
+    @staticmethod
+    def _has_active_filter(merged_filters: RetrievalFilters) -> bool:
+        """True if any metadata filter scopes the search (company/ticker/sector/date/etc.)."""
+        return any([
+            merged_filters.sender_companies, merged_filters.tickers, merged_filters.sector,
+            merged_filters.report_type, merged_filters.asset_class,
+            merged_filters.coverage_period_from, merged_filters.coverage_period_to,
+            merged_filters.written_date_from, merged_filters.written_date_to,
+        ])
+
+    def _is_underspecified(self, question: str, merged_filters: RetrievalFilters) -> bool:
+        """Deterministic fallback for the model's is_underspecified judgment (used only if
+        the analysis call errored). True when a metadata filter scopes the search but the
+        question names NO concrete topic — e.g. 'what has SinoPac said in Q1 2025?'."""
+        if not self._has_active_filter(merged_filters):
+            return False  # no scope to anchor a clarification — answer normally
+        text = (question or "").lower()
+        for name in (merged_filters.sender_companies or []):
+            text = text.replace(name.lower(), " ")
+        for tk in (merged_filters.tickers or []):
+            text = text.replace(tk.lower(), " ")
+        if merged_filters.sector:
+            text = text.replace(merged_filters.sector.lower(), " ")
+        # Strip explicit period mentions (Q1, H2, months, years) — they're the filter, not a topic.
+        text = re.sub(r"\bq[1-4]\b|\bh[12]\b|\b(?:19|20)\d{2}\b", " ", text)
+        text = re.sub(
+            r"\b(jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\b", " ", text
+        )
+        # len > 1 drops stray single chars left by possessives/contractions ("what's" → "s").
+        tokens = [
+            t for t in re.findall(r"[a-z0-9]+", text)
+            if len(t) > 1 and t not in self._BROAD_STOPWORDS
+        ]
+        return len(tokens) == 0
+
+    def _clarify_message(self, merged_filters: RetrievalFilters, analysis: dict) -> dict:
+        """Build a clarification response for an underspecified, filter-scoped query: state
+        the scope + how many documents match, and offer ways to narrow. No generation call."""
+        docs = self.db.list_documents_filtered(
+            document_ids=merged_filters.document_ids,
+            filenames=merged_filters.filenames,
+            sender_names=merged_filters.sender_names,
+            sender_companies=merged_filters.sender_companies,
+            written_date_from=merged_filters.written_date_from,
+            written_date_to=merged_filters.written_date_to,
+            tickers=merged_filters.tickers,
+            report_type=merged_filters.report_type,
+            sector=merged_filters.sector,
+            asset_class=merged_filters.asset_class,
+            coverage_period_from=merged_filters.coverage_period_from,
+            coverage_period_to=merged_filters.coverage_period_to,
+        )
+        scope_bits = []
+        if merged_filters.sender_companies:
+            scope_bits.append(", ".join(merged_filters.sender_companies))
+        if merged_filters.coverage_period_from or merged_filters.coverage_period_to:
+            scope_bits.append(
+                f"covering {merged_filters.coverage_period_from or '…'} to "
+                f"{merged_filters.coverage_period_to or '…'}"
+            )
+        scope = " ".join(scope_bits) if scope_bits else "your filters"
+        n = len(docs)
+        answer = (
+            f"That's a broad question — I found **{n}** matching document{'s' if n != 1 else ''} "
+            f"for {scope}. To give you a focused, well-sourced answer, what would you like?\n"
+            f"1) An overall summary of the key themes across all of them\n"
+            f"2) A specific stock, ticker, or sector (e.g. \"China Mobile\", \"offshore wind\")\n"
+            f"3) A particular topic (e.g. earnings, technical setups, macro outlook)\n"
+            f"Reply with one and I'll dig into the details."
+        )
+        return {
+            "answer": answer,
+            "chunks_used": [],
+            "inferred_filters": analysis.get("hard_filters") or {},
+            "query_type": "clarify",
+            "is_enumeration": False,
+        }
+
+    def _format_document_list(
+        self,
+        docs: List[PDFDocument],
+        doc_pages: Optional[Dict[int, List[int]]] = None,
+    ) -> str:
+        """Deterministically format a document inventory as markdown — no LLM call.
+
+        Each line is the document name plus the relevant page numbers. When no specific
+        pages are supplied for a document (doc_pages is None or empty for it), the whole
+        document is relevant, so pages are shown as "All".
+        """
+        count = len(docs)
+        lines = [f"Found **{count}** matching document{'s' if count != 1 else ''}:\n"]
+        for i, doc in enumerate(docs, 1):
+            pages = (doc_pages or {}).get(doc.id) if doc_pages else None
+            if pages:
+                pages_str = ", ".join(str(p) for p in sorted(set(pages)))
+            else:
+                pages_str = "All"
+            # Numbered item is the document; its page reference (the source pointer) sits
+            # directly underneath so each entry carries its own reference.
+            lines.append(f"{i}) **{doc.filename}**")
+            lines.append(f"   Source: Pages {pages_str}")
+        return "\n".join(lines)
+
+    def _answer_list_query(
+        self,
+        question: str,
+        standalone_query: str,
+        merged_filters: RetrievalFilters,
+        analysis: dict,
+    ) -> dict:
+        """Handle list-type queries: return all matching documents as an organised inventory.
+
+        Output is always a deterministic markdown list of document names + relevant pages
+        (no generation LLM call). Two retrieval paths feed that formatter:
+          * Pure metadata ("all SinoPac documents") → single SQL query, every doc's pages
+            shown as "All". No embedding call — near-instant.
+          * Concept / hybrid ("docs about supply chain") → semantic ranking pass; each
+            doc lists the specific page numbers whose chunks matched.
+        """
+        # Step 1: metadata lookup — all docs matching hard filters, no limit.
+        meta_docs = self.db.list_documents_filtered(
+            document_ids=merged_filters.document_ids,
+            filenames=merged_filters.filenames,
+            sender_names=merged_filters.sender_names,
+            sender_companies=merged_filters.sender_companies,
+            written_date_from=merged_filters.written_date_from,
+            written_date_to=merged_filters.written_date_to,
+            tickers=merged_filters.tickers,
+            report_type=merged_filters.report_type,
+            sector=merged_filters.sector,
+            asset_class=merged_filters.asset_class,
+            coverage_period_from=merged_filters.coverage_period_from,
+            coverage_period_to=merged_filters.coverage_period_to,
+        )
+
+        # ── Fast path: pure-metadata listing (no concept to rank by) ──────────
+        # Skip the embedding + generation Gemini calls entirely; format in Python.
+        if not self._has_semantic_intent(standalone_query, merged_filters):
+            print("[DEBUG] list_documents fast path (pure metadata, no LLM calls)")
+            if not meta_docs:
+                return {
+                    "answer": "No documents matching your criteria were found in the database.",
+                    "chunks_used": [],
+                    "inferred_filters": analysis.get("hard_filters") or {},
+                    "query_type": "list_documents",
+                }
+            return {
+                "answer": self._format_document_list(meta_docs),
+                "chunks_used": [],
+                "inferred_filters": analysis.get("hard_filters") or {},
+                "query_type": "list_documents",
+            }
+
+        # Step 2: semantic ranking — same metadata filters, high limit, very low threshold.
+        query_emb = embed_text(standalone_query)
+        semantic_chunks = self.db.semantic_search_chunks(
+            query_embedding=query_emb,
+            limit=50,
+            similarity_threshold=0.05,
+            document_ids=merged_filters.document_ids,
+            filenames=merged_filters.filenames,
+            sender_names=merged_filters.sender_names,
+            sender_companies=merged_filters.sender_companies,
+            written_date_from=merged_filters.written_date_from,
+            written_date_to=merged_filters.written_date_to,
+            tickers=merged_filters.tickers,
+            report_type=merged_filters.report_type,
+            sector=merged_filters.sector,
+            asset_class=merged_filters.asset_class,
+            coverage_period_from=merged_filters.coverage_period_from,
+            coverage_period_to=merged_filters.coverage_period_to,
+        )
+
+        # Build doc_id → best cosine similarity score from semantic results.
+        # semantic_search_chunks orders by distance ASC so first hit per doc is best.
+        doc_score: dict[int, float] = {}
+        for chunk in semantic_chunks:
+            if chunk.document_id not in doc_score:
+                # We don't have the raw distance here, so use insertion order as proxy.
+                # Assign descending scores so earlier (more relevant) chunks rank higher.
+                doc_score[chunk.document_id] = len(semantic_chunks) - len(doc_score)
+
+        # Step 3: merge — metadata docs ranked by semantic score, then by date.
+        if not meta_docs and not semantic_chunks:
+            return {
+                "answer": "No documents matching your criteria were found in the database.",
+                "chunks_used": [],
+                "inferred_filters": analysis.get("hard_filters") or {},
+                "query_type": "list_documents",
+            }
+
+        # If no metadata filters were applied, fall back to semantic-only results.
+        if not meta_docs and semantic_chunks:
+            # Deduplicate semantic chunks by document, preserving relevance order.
+            seen: set[int] = set()
+            ranked_doc_ids: list[int] = []
+            for chunk in semantic_chunks:
+                if chunk.document_id not in seen:
+                    seen.add(chunk.document_id)
+                    ranked_doc_ids.append(chunk.document_id)
+            # Fetch full PDFDocument objects for these IDs.
+            all_docs = self.db.list_documents_filtered(document_ids=ranked_doc_ids)
+            doc_map = {d.id: d for d in all_docs}
+            ranked_docs = [doc_map[did] for did in ranked_doc_ids if did in doc_map]
+        else:
+            # Sort metadata docs: those with a semantic score first (by score desc),
+            # then remaining docs by date.
+            ranked_docs = sorted(
+                meta_docs,
+                key=lambda d: (-doc_score.get(d.id, -1),
+                               -(d.written_date.toordinal() if d.written_date else 0)),
+            )
+
+        # Step 4: collect the relevant page numbers per document from the matching chunks.
+        # Only page-level chunks carry a page_number; doc/section-level matches (page=None)
+        # imply the whole document is relevant, so those docs fall back to "All".
+        doc_pages: Dict[int, List[int]] = {}
+        for chunk in semantic_chunks:
+            if chunk.page_number is not None:
+                doc_pages.setdefault(chunk.document_id, []).append(chunk.page_number)
+
+        return {
+            "answer": self._format_document_list(ranked_docs, doc_pages),
+            "chunks_used": [],
+            "inferred_filters": analysis.get("hard_filters") or {},
+            "query_type": "list_documents",
+        }
 
     def answer_question(
         self,
@@ -490,75 +1269,131 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
         is_followup = analysis.get("is_followup", False)
         trimmed_history = (history or [])[-HISTORY_WINDOW:]
 
+        query_type = analysis.get("query_type", "rag")
+        # Whether the user asked for an enumeration of content (e.g. "10 trends"). Used by
+        # the frontend to deterministically number list items as 1), 2), 3), ...
+        is_enumeration = _is_content_enumeration(question)
         print(f"[DEBUG] standalone_query: {standalone_query!r}")
         print(f"[DEBUG] is_followup: {is_followup}")
+        print(f"[DEBUG] query_type: {query_type!r}")
+        print(f"[DEBUG] is_enumeration: {is_enumeration}")
+        print(f"[DEBUG] is_underspecified(llm): {analysis.get('is_underspecified')}")
         print(f"[DEBUG] inferred hard_filters: {analysis.get('hard_filters')}")
 
         citation_instruction = (
-            "Answer clearly. For every specific fact cite (filename, page). "
-            "For synthesized conclusions, note which documents they are drawn from."
+            "Organize the answer into short paragraphs, each covering one idea or theme. "
+            "Do NOT scatter citations inline after every sentence — it makes the text hard "
+            "to read. Instead, write the prose cleanly, then place the supporting citations "
+            "together at the END of each paragraph on their own line, e.g. "
+            "'Sources: (report_a.pdf, p.3), (report_b.pdf, p.7)'.\n"
+            "CITE PRECISELY — this is critical:\n"
+            "- Cite a (filename, page) ONLY if a specific statement in that paragraph is "
+            "directly drawn from that exact page's content. \n"
+            "- Do NOT list every page that happens to appear in the context. The context "
+            "includes neighbouring 'Parent'/'sibling' pages purely for background; do not "
+            "cite those unless you actually used a fact from them.\n"
+            "- The citation list should be the MINIMAL set of pages that supports what you "
+            "wrote. If a short paragraph cites many pages, that is a red flag you are "
+            "over-citing — trim it to the pages that genuinely back a stated fact.\n"
+            "- Never cite a page to signal it is 'related'; only cite it as the source of a "
+            "specific claim you made.\n"
+            "LISTS — when the user asks for a number of items (e.g. '10 trends', '5 risks') "
+            "or the answer is naturally an enumeration, you MUST format it as a numbered "
+            "list and follow ALL of these rules:\n"
+            "  • Start EVERY item with its number and a closing parenthesis: '1)', '2)', "
+            "'3)', ... (not '1.', not a bullet).\n"
+            "  • Immediately BELOW each item, on its own line, put that item's citation "
+            "prefixed with 'Source:'. Include a page if you are sure of it "
+            "('Source: (filename.pdf, p.N)'); if you know the document but not the exact "
+            "page, cite the document alone ('Source: (filename.pdf)') — that is fine.\n"
+            "  • EVERY item MUST have a Source line naming a document that is actually in the "
+            "provided context. If an item cannot be tied to any document in the context, DO "
+            "NOT include it — choose a different, attributable one. Never output an item with "
+            "no source, and never name a document that is not in the context.\n"
+            "  • Each item's Source line cites only the document(s) backing THAT item; never "
+            "share one citation block across items or move citations to the end.\n"
+            "Example:\n"
+            "  1) Revenue grew 12% year over year.\n"
+            "     Source: (report_a.pdf, p.3)\n"
+            "  2) Operating margin expanded to 18%.\n"
+            "     Source: (report_b.pdf)"
         )
 
-        # ── Follow-up path: skip RAG entirely ────────────────────────────────
-        # For "expand on that", "clarify X", "go deeper" etc. the model already
-        # has the full answer in history. Sending new chunks is noise and risks
-        # pulling the model away from what it was discussing.
-        # Fall back to normal RAG if there is no history to elaborate from.
-        if is_followup and trimmed_history:
-            followup_system = (
-                "You are a financial analysis assistant continuing a conversation. "
-                "The user is asking you to elaborate, clarify, or go deeper on your "
-                "previous answer. Stay strictly grounded in what has already been "
-                "discussed and cited in this conversation — do not introduce new facts, "
-                "figures, or claims that were not present in your prior answers. "
-                "If the user asks about something not covered in the conversation, "
-                "say so explicitly rather than speculating."
-            )
-            contents: List = []
-            first_question = trimmed_history[0]["content"]
-            contents.append(types.Content(
-                role="user",
-                parts=[types.Part(text=f"{followup_system}\n\nQuestion: {first_question}")],
-            ))
-            for msg in trimmed_history[1:]:
-                role = "model" if msg["role"] == "assistant" else "user"
-                contents.append(types.Content(
-                    role=role,
-                    parts=[types.Part(text=msg["content"])],
-                ))
-            contents.append(types.Content(
-                role="user",
-                parts=[types.Part(text=f"Question: {question}\n\n{citation_instruction}")],
-            ))
+        # Follow-ups ("expand on that", "what about Baidu's Ernie model?", "summarize the
+        # themes") flow through the normal RAG path below — which already interleaves the
+        # conversation history into generation — so the model can RETRIEVE fresh document
+        # content when the follow-up needs it, instead of being limited to what was already
+        # said. is_followup only relaxes the retrieval threshold (a reference-y rewrite can
+        # score low), so the follow-up still pulls relevant chunks rather than coming back empty.
 
-            for attempt in range(4):
-                try:
-                    response = self.client.models.generate_content(
-                        model=GENERATION_MODEL,
-                        contents=contents,
-                        config={"temperature": 0},
-                    )
-                    break
-                except google.api_core.exceptions.ResourceExhausted:
-                    if attempt == 3:
-                        raise
-                    wait = 15 * (2 ** attempt)
-                    print(f"[WARNING] Gemini rate limited, retrying in {wait}s (attempt {attempt + 1}/4)")
-                    time.sleep(wait)
-
-            answer = response.text if hasattr(response, "text") else str(response)
-            return {
-                "answer": answer,
-                "chunks_used": [],
-                "inferred_filters": {},
-            }
+        # ── List-documents path ───────────────────────────────────────────────
+        # For queries that enumerate files rather than ask for content analysis,
+        # skip chunk RAG entirely and return a document inventory.
+        if query_type == "list_documents":
+            merged_filters = self._merge_filters(filters, analysis)
+            return self._answer_list_query(question, standalone_query, merged_filters, analysis)
 
         # ── Normal RAG path ───────────────────────────────────────────────────
         merged_filters = self._merge_filters(filters, analysis)
 
+        # Clarification gate: a query scoped to a company/period but naming no concrete topic
+        # (e.g. "what has SinoPac said in Q1 2025?") yields an invented search query and
+        # diffuse retrieval. Ask the user to narrow rather than guessing. Skip on follow-ups
+        # (handled above) so a reply like "topic X" still gets answered.
+        #
+        # Prefer the model's judgment (folded into _analyze_query — no extra call) and only
+        # clarify when a filter actually scopes the search. Fall back to the deterministic
+        # heuristic if the analysis call errored and didn't return the field.
+        if "is_underspecified" in analysis:
+            underspecified = analysis["is_underspecified"] and self._has_active_filter(merged_filters)
+        else:
+            underspecified = self._is_underspecified(question, merged_filters)
+        if underspecified:
+            print("[DEBUG] underspecified query → asking user to clarify")
+            return self._clarify_message(merged_filters, analysis)
+
+        # Tiered similarity threshold: relax when metadata filters already constrain the pool.
+        _metadata_filter_fields = [
+            merged_filters.sender_companies,
+            merged_filters.tickers,
+            merged_filters.written_date_from,
+            merged_filters.written_date_to,
+            merged_filters.coverage_period_from,
+            merged_filters.coverage_period_to,
+            merged_filters.report_type,
+            merged_filters.sector,
+            merged_filters.asset_class,
+        ]
+        _active_filter_count = sum(1 for f in _metadata_filter_fields if f)
+        if _active_filter_count == 0:
+            effective_threshold = self.SIMILARITY_THRESHOLD
+        elif _active_filter_count <= 2:
+            effective_threshold = self.SIMILARITY_THRESHOLD_FEW_FILTERS
+        else:
+            effective_threshold = self.SIMILARITY_THRESHOLD_MANY_FILTERS
+        print(f"[DEBUG] active_metadata_filters={_active_filter_count}, similarity_threshold={effective_threshold}")
+
+        # Enumeration ("10 trends across X"): override for document breadth. Relax the
+        # threshold (the filter already guarantees relevance) and cap chunks-per-document so
+        # retrieval spreads across many docs — giving the model a real page to cite for each
+        # item instead of fabricating one (which the verifier then strips, leaving it blank).
+        per_document_cap = None
+        if is_enumeration:
+            effective_threshold = self.ENUMERATION_SIMILARITY_THRESHOLD
+            per_document_cap = self.ENUMERATION_PER_DOC_CAP
+            print(f"[DEBUG] enumeration retrieval: threshold={effective_threshold}, "
+                  f"per_document_cap={per_document_cap}")
+        elif is_followup:
+            # A follow-up's rewritten query is often reference-y and scores low, so relax the
+            # threshold to make sure it still pulls relevant chunks (the conversation history,
+            # interleaved into generation below, keeps the model on-topic).
+            effective_threshold = min(effective_threshold, self.SIMILARITY_THRESHOLD_FEW_FILTERS)
+            print(f"[DEBUG] follow-up retrieval: relaxed threshold={effective_threshold}")
+
         # Step 3: Retrieve chunks using the focused standalone query.
         chunks = self.retrieve_relevant_chunks(
             standalone_query, top_k=top_k, filters=merged_filters,
+            similarity_threshold=effective_threshold, per_document_cap=per_document_cap,
         )
 
         if not chunks:
@@ -570,18 +1405,26 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
                 ),
                 "chunks_used": [],
                 "inferred_filters": analysis.get("hard_filters") or {},
+                "query_type": "rag",
+                "is_enumeration": is_enumeration,
             }
 
         # Step 4: Build context string from retrieved chunks.
-        context = self._build_context(chunks)
+        # context_refs = every (filename, page) shown to the model, for citation verification.
+        context, context_refs = self._build_context(chunks)
 
         system = (
             "You are a financial analysis assistant. Your answers must be grounded exclusively "
             "in the provided document context below — never in your training knowledge.\n\n"
             "Rules:\n"
             "1. Every specific claim (numbers, dates, company actions, prices, forecasts) "
-            "must be directly supported by the context. Cite the source filename and page "
-            "for each such claim.\n"
+            "must be directly supported by the context. Keep the prose clean: group related "
+            "claims into a paragraph and place the supporting (filename, page) citations "
+            "TOGETHER at the end of that paragraph — never inline after each sentence. Cite "
+            "PRECISELY: only the exact pages a stated fact came from, never every page in the "
+            "context, and never neighbouring background (Parent/sibling) pages you did not "
+            "actually draw a fact from. A short paragraph with many cited pages means you are "
+            "over-citing — trim to the minimal supporting set.\n"
             "2. You MAY reason, synthesize, and identify trends across the provided chunks — "
             "but only from what the documents actually say. Drawing a conclusion like "
             "'revenue has trended upward across these reports' is allowed if the chunks support it.\n"
@@ -642,6 +1485,20 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
                 time.sleep(wait)
         answer = response.text if hasattr(response, "text") else str(response)
 
+        # Verify citations against what the model was actually shown (deterministic, no
+        # extra LLM call): strip any fabricated (filename, page) pairs and log a breakdown.
+        answer = self._verify_citations(answer, chunks, context_refs)
+        # Merge repeated same-document citations: (doc, p.1), (doc, p.2) → (doc, pp. 1, 2).
+        answer = self._consolidate_citations(answer)
+        # For lists, drop any item whose citation didn't survive verification so the user
+        # never sees an unsourced item (guarantees every item carries a citation).
+        if is_enumeration:
+            answer = self._enforce_sourced_items(answer)
+
+        # Surface only the chunks the answer actually cited as sources — not the full
+        # retrieved pool (which includes low-similarity chunks the model never used).
+        cited_chunks = self._select_cited_chunks(answer, chunks)
+
         return {
             "answer": answer,
             "chunks_used": [
@@ -651,10 +1508,47 @@ Return ONLY a valid JSON object. No markdown, no explanation."""
                     "page_number": c.page_number,
                     "metadata": c.metadata_ or {},
                 }
-                for c in chunks
+                for c in cited_chunks
             ],
             "inferred_filters": analysis.get("hard_filters") or {},
+            "query_type": "rag",
+            "is_enumeration": is_enumeration,
         }
+
+    def _diversify_by_document(
+        self, chunks: List[PDFChunk], top_k: int, per_doc_cap: int
+    ) -> List[PDFChunk]:
+        """Spread retrieval across documents for breadth. Round-robins one chunk at a time
+        from each document (best-first within a doc, since `chunks` arrive in similarity
+        order), taking at most `per_doc_cap` per document. So pass 1 grabs every document's
+        top chunk before any document gets a second — no single doc can monopolise the
+        budget, and the model gets a citable page from many distinct documents."""
+        by_doc: Dict[int, List[PDFChunk]] = {}
+        for c in chunks:  # already ordered best → worst by similarity
+            by_doc.setdefault(c.document_id, []).append(c)
+
+        # Within each document, prefer PAGE-LEVEL chunks (they carry a citable page number)
+        # over document/section summaries — otherwise the model gets only summaries (page=None)
+        # and can't cite anything. sort() is stable, so similarity order is preserved within
+        # each group. (Summaries still reach the model via _build_context's parent expansion.)
+        for doc_id in by_doc:
+            by_doc[doc_id].sort(key=lambda c: c.page_number is None)
+
+        selected: List[PDFChunk] = []
+        counts: Dict[int, int] = {doc_id: 0 for doc_id in by_doc}
+        while len(selected) < top_k:
+            progressed = False
+            for doc_id, queue in by_doc.items():
+                if counts[doc_id] >= per_doc_cap or not queue:
+                    continue
+                selected.append(queue.pop(0))
+                counts[doc_id] += 1
+                progressed = True
+                if len(selected) >= top_k:
+                    break
+            if not progressed:
+                break  # every doc is exhausted or at its cap
+        return selected
 
     def _diversify_chunks(self, chunks: List[PDFChunk], top_k: int) -> List[PDFChunk]:
         """
@@ -744,6 +1638,15 @@ def main():
     backfill = sub.add_parser("backfill", help="Backfill embeddings for pages")
     backfill.add_argument("--batch-size", type=int, default=64)
     backfill.add_argument("--max-batches", type=int, default=None)
+    backfill.add_argument(
+        "--reset", action="store_true",
+        help="Clear ALL existing embeddings first, then re-embed every chunk "
+             "(use when switching embedding models)",
+    )
+    backfill.add_argument(
+        "--sleep", type=float, default=0.0,
+        help="Seconds to pause between batches to stay under API rate/token limits",
+    )
 
     ask = sub.add_parser("ask", help="Ask a question")
     ask.add_argument("question", help="Question")
@@ -760,6 +1663,8 @@ def main():
         n = pipeline.backfill_embeddings(
             batch_size=args.batch_size,
             max_batches=args.max_batches,
+            reset=args.reset,
+            sleep=args.sleep,
         )
         print(f"Embedded {n} chunk(s).")
     elif args.command == "ask":
