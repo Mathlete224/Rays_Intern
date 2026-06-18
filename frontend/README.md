@@ -1,73 +1,53 @@
-# React + TypeScript + Vite
+# Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Visual research client for the Financial PDF Research Platform: a node-based canvas (ReactFlow)
+plus a chat view, talking to the FastAPI backend.
 
-Currently, two official plugins are available:
+## Run
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+The dev server proxies `/api` → `http://localhost:8000` (see `vite.config.ts`), so the FastAPI
+backend must be running. Other scripts: `npm run build`, `npm run preview`, `npm run lint`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## What's here
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Canvas** — right-click to add Query, Note, and Research Agent nodes; drag edges to link findings; canvases auto-save.
+- **Chat** — ask questions against the document set. The UI reflects the backend's query handling:
+  - **Clarification** — a broad, underspecified question ("what did SinoPac say in Q1 2025?") returns a prompt to narrow instead of a guessed answer.
+  - **Document inventory** vs **RAG** answers, and **numbered, per-item-sourced lists** for "list N things" queries.
+  - **Source pills** are rendered beneath each block of the answer (parsed from the answer's citations), and the **cited documents are highlighted in the sidebar** (in citation order).
+- **Sidebar** — upload PDFs, filter the document set (company, author, date, ticker, report type, asset class, sector), and see which documents an answer cited.
+
+## Structure
+
+| Path | Role |
+|------|------|
+| `src/api/client.ts` | Axios client (`baseURL: '/api'`) — ask, upload, documents, agent, canvas |
+| `src/components/ChatView.tsx` | Chat UI: send questions, render answers + source pills, drive sidebar highlight |
+| `src/components/Sidebar.tsx` | Documents (with cited-highlight + count), Filters, Canvases, Chats |
+| `src/components/Toolbar.tsx` | Canvas toolbar (new/save/load canvases) |
+| `src/store/` | Zustand stores: `chatStore`, `documentStore`, `filterStore`, `canvasStore` |
+| `src/lib/citations.ts` | Parse in-text citations (`(file.pdf, p.3)` / document-level `(file.pdf)`) into source pills |
+| `src/types/index.ts` | Shared API types (`AskResponse`, `ChunkRef`, etc.) |
+| `src/hooks/useAutoSave.ts` | Debounced canvas auto-save |
+
+## Notes for editing
+
+- Citation parsing in `lib/citations.ts` mirrors the backend regex in
+  `PDF_summarizer/rag_gemini.py` (`_CITATION_RE`/`_expand_pages`) — keep them in sync so the pills
+  match what the backend verified.
+- `query_type` (`rag` | `list_documents` | `clarify`) and `is_enumeration` come from the backend
+  and control how `ChatView` renders the answer (auto-filter chips, numbering, etc.).
+
+---
+
+<details>
+<summary>Vite + ESLint template notes</summary>
+
+This app was scaffolded with the React + TypeScript + Vite template. For type-aware lint rules,
+see the [Vite React ESLint docs](https://react.dev/learn/react-compiler/installation).
+</details>

@@ -19,7 +19,7 @@ def example_single_pdf():
     pipeline = PDFSummarizerPipeline(database_url=DB_URL)
 
     result = pipeline.process_single_pdf(
-        "test_PDFs/91_HSBC...Technical Buy here..._HSBC Technical Buy.pdf",
+        "test_pdfs/short_example.pdf",
         skip_existing=True,
     )
 

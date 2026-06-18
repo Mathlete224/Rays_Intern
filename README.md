@@ -83,8 +83,12 @@ python PDF_summarizer/pipeline.py report.pdf --db-url $PDF_SUMMARIZER_DB_URL
 # Ingest a directory of PDFs (parallelized, default 4 workers)
 python PDF_summarizer/pipeline.py research_pdfs/ --db-url $PDF_SUMMARIZER_DB_URL --max-workers 8
 
-# Backfill embeddings
+# Backfill embeddings (only embeds chunks that don't have one yet)
 python PDF_summarizer/rag_gemini.py backfill --db-url $PDF_SUMMARIZER_DB_URL
+
+# Re-embed everything from scratch (use when switching EMBEDDING_MODEL).
+# --reset clears all existing vectors first; --sleep throttles to avoid rate limits.
+python PDF_summarizer/rag_gemini.py backfill --reset --sleep 2 --db-url $PDF_SUMMARIZER_DB_URL
 
 # Backfill extended metadata (tickers, sector, etc.) for existing documents — no re-ingestion needed
 python PDF_summarizer/pipeline.py --backfill-metadata --db-url $PDF_SUMMARIZER_DB_URL
@@ -100,21 +104,35 @@ python PDF_summarizer/rag_gemini.py ask "What were the main revenue drivers?" --
 
 ### PDF ingestion (3-level hierarchy)
 1. **Docling** parses the PDF — extracts text, tables, and page images
-2. **Gemini 2.0 Flash** verbalizes every chart/table into plain text; runs in parallel across sections and images for 3–5× speedup
+2. **Gemini 2.5 Flash** verbalizes every chart/table into plain text; runs in parallel across sections and images for 3–5× speedup
 3. Three chunk levels are stored: document summary → section summaries → per-page content
 4. Parent/sibling relationships are stored in JSONB metadata for context expansion
 5. **Extended metadata** is extracted in a single Gemini call: tickers, report type, sector, asset class, and coverage period
+6. Chunks are embedded with **gemini-embedding-2** (768 dims) — run `backfill` after ingestion
 
-### RAG query
-1. Question is embedded via `text-embedding-003-small` (3072 dims)
-2. pgvector cosine search retrieves top-k chunks, filtered by any active hard filters (company, date range, sector, etc.)
-3. Each chunk is expanded with its parent + prev/next sibling (~9 chunks total context)
-4. **Gemini 1.5 Pro** generates the final answer with citations
+### Query handling
+
+Every question flows through three stages — classification → handling → output — in a loop
+(see the high-level diagram at `docs/pipeline_overview.drawio`):
+
+**1. Classification.** A single Gemini 3.5 Flash call (`_analyze_query`) analyzes the question and returns:
+- **hard filters** that were explicitly or implicitly requested (company, ticker, date, sector,
+  coverage period). Explicit periods like "Q1 2025" are parsed deterministically into a coverage-period range so filtering is consistent.
+- a self-contained **`standalone_query`** used for embedding (references like "their" are resolved from history; it never invents topics).
+- **`query_type`**: `rag` (answer from document content), `list_documents` (inventory of matching files), or `clarify`.
+- **`is_followup`** (a continuation of the conversation) and **`is_underspecified`** (scoped by a filter but naming no topic).
+
+**2. Handling** depends on the classification:
+- **Underspecified** ("what did SinoPac say in Q1 2025?") → the bot asks the user to narrow (overall summary / a specific name / a topic) rather than guessing.
+- **`list_documents`** → returns a deterministic inventory of matching documents (no generation call).
+- **`rag`** → embeds the standalone query (gemini-embedding-2), runs pgvector cosine search with a **tiered similarity threshold** (relaxed as more metadata filters already constrain the pool), expands each hit with its parent + prev/next sibling pages, and generates the answer with **Gemini 3.5 Flash**. Two special cases: **enumerations** ("10 trends…") retrieve for *breadth* across many documents (per-document cap) so each item has a citable source; **follow-ups** also retrieve, with the conversation history interleaved into generation.
+
+**3. Output.** Citations are verified deterministically at the **document level** — a cited document that wasn't retrieved is stripped as fabricated, while a correct document with an unverifiable page degrades to a document-level citation rather than being discarded. Any list item left unsourced is dropped. Sources are surfaced beneath the answer and the cited documents are highlighted in the sidebar.
 
 ### Agentic research
-1. **Gemini 2.0 Flash** decomposes the goal into 3–5 sub-questions
+1. **Gemini 3.5 Flash** decomposes the goal into 3–5 sub-questions
 2. Each sub-question runs through the full RAG pipeline independently
-3. **Gemini 2.0 Flash** synthesizes all findings into a final report
+3. **Gemini 3.5 Flash** synthesizes all findings into a final report
 
 ## Document metadata
 
@@ -138,6 +156,6 @@ Missing metadata can be backfilled at any time without re-ingesting PDFs — see
 | Table | Description |
 |-------|-------------|
 | `pdf_documents` | File-level metadata (filename, hash, page count, all metadata fields above) |
-| `pdf_chunks` | Chunks with `Vector(1024)` embedding, raw markdown, verbalized summary, JSONB metadata |
+| `pdf_chunks` | Chunks with `Vector(768)` embedding (gemini-embedding-2), raw markdown, verbalized summary, JSONB metadata |
 | `canvases` | Saved research canvas names and timestamps |
 | `canvas_state` | ReactFlow nodes/edges stored as JSONB per canvas |
